@@ -4,13 +4,47 @@ body, html {
     padding: 0;
     font-family: Arial, sans-serif;
   }
-  
-  .app-container {
-    display: flex;
-    min-height: 100vh;
-    background-color: #000;
-    color: #fff;
-  }
+
+  /* Navbar Styles */
+.navbar {
+  height: 60px; /* Fixed height for the navbar */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 20px;
+  background-color: #000;
+  color: #fff;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-right {
+  text-align: right;
+  font-weight: bold;
+}
+
+.company-name {
+  font-size: 2.0rem;
+  color: #c4a853;
+}
+
+/* Main App Container */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Use the full viewport height */
+  background-color: #000;
+  color: #fff;
+}
+
+.content-container {
+  display: flex;
+  flex: 1; /* Take up the remaining space after the navbar */
+  overflow: hidden; /* Prevent content overflow */
+}
+
   
   /* Sidebar Styles */
   .sidebar {
@@ -19,6 +53,7 @@ body, html {
     padding: 24px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto; /* Enable scrolling within the sidebar if content overflows */
   }
   
   .sidebar-title {
@@ -89,7 +124,8 @@ body, html {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    overflow-y: auto; /* Enable scrolling within the chat area if content overflows */
+    height: 100%; /* Ensure it fills the remaining height */
   }
   
   /* Messages Styles */
