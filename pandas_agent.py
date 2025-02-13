@@ -120,11 +120,11 @@ class PandasAgent:
                         f"The model tried to call an invalid tool: {tc['name']}"
                     )
                     raise Exception
-                logger.info(f"LLM calls <{tc["name"]}>")
+                logger.info(f"LLM calls <{tc['name']}>")
                 if tc["name"] == "python_repl_ast":
                     original_code = tc["args"]["query"]
                     code = original_code
-                    logger.debug(f"LLM calls <{tc["name"]}>.")
+                    logger.debug(f"LLM calls <{tc['name']}>.")
                     # "Cicha" podmiana kodu żeby zapisywał grafiki wykresów gdzie chcemy
                     if "matplotlib" in code or "plt" in code:
                         logger.debug("Changing LLM-provided code.")
@@ -233,21 +233,24 @@ class PandasAgent:
         #       pandas agencie?
 
     def invoke(self, message, full_context=False):
-        config = {"configurable": {"thread_id": "1"}}  # "recursion_limit": 1
+        config = {
+            "thread_id": "1",
+            # Increase this to, say, 50 or 100
+            "recursion_limit": 50
+            
+        }
         try:
-            messages = self.graph.invoke(
-                {"messages": [HumanMessage(content=message)]}, config
-            )
+            messages = self.graph.invoke({"messages": [HumanMessage(content=message)]}, config)
             if full_context:
                 return messages
             return messages["messages"][-1].content
         except GraphRecursionError as e:
             logger.exception(e)
-            # TODO: https://langchain-ai.github.io/langgraph/how-tos/return-when-recursion-limit-hits/?h=recursion#with-returning-state
             return GRAPHRECURSION_FALLBACK_MESSAGE
         except Exception as e:
             logger.exception(e)
             return CRITICAL_FAILURE_FALLBACK_MESSAGE
+
 
     def clear_memory(self):
         logger.info("Clearing chat context (storage/memory)")

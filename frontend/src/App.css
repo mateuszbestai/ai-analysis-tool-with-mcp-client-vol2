@@ -42,7 +42,7 @@ body, html {
 .content-container {
   display: flex;
   flex: 1; /* Take up the remaining space after the navbar */
-  overflow: hidden; /* Prevent content overflow */
+  overflow: auto; 
 }
 
   
@@ -124,7 +124,7 @@ body, html {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto; /* Enable scrolling within the chat area if content overflows */
+    overflow: auto; /* Enable scrolling within the chat area if content overflows */
     height: 100%; /* Ensure it fills the remaining height */
   }
   
@@ -132,11 +132,13 @@ body, html {
   .messages-container {
     flex: 1;
     overflow-y: auto;
+    overflow-x: auto;
     padding: 24px;
   }
   
   .messages {
-    max-width: 768px;
+    max-width: none;
+    width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -156,7 +158,8 @@ body, html {
   }
   
   .message-bubble {
-    max-width: 80%;
+    max-width: none;
+    overflow-x: auto;
     border-radius: 8px;
     padding: 16px;
   }
@@ -328,4 +331,32 @@ body, html {
     height: 100%;
     overflow: hidden;
   }
+
+  .chat-table {
+    width: auto;  
+    min-width: 100%; 
+    border-collapse: collapse;
+    margin-top: 10px;
+    overflow-x: auto;
+  }
+  th, td {
+    white-space: nowrap; /* let columns expand horizontally */
+  }
+  
+  .chat-table th, .chat-table td {
+    border: 1px solid #c4a853;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  .chat-table th {
+    background-color: #ddd;
+    color: #000000;
+    font-weight: bold;
+  }
+  
+  .chat-table td {
+    word-wrap: break-word;
+  }
+  
   

@@ -21,7 +21,7 @@ function Chatbox() {
     setQuestionInput(e.target.value);
   }
 
-  function clickAskBtn(e) {
+  function clickAskBtn() {
     if (!questionInput.trim()) return;
 
     const userMessage = {
@@ -46,31 +46,17 @@ function Chatbox() {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.answer) {
-          const botMessage = {
-            messageType: "bot",
-            content: data.answer,
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            image: data.image ? "/assets/" + data.image : null,
-          };
-          setMessages((prevMessages) => [...prevMessages, botMessage]);
-        } else {
-          const errorMessage = data.error || "Unknown error occurred.";
-          setMessages((prevMessages) => [
-            ...prevMessages,
-            {
-              messageType: "bot",
-              content: `Error: ${errorMessage}`,
-              timestamp: new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            },
-          ]);
-        }
+        const botMessage = {
+          messageType: "bot",
+          content: data.answer || "",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          table: data.table || null,
+          image: data.image ? "/assets/" + data.image : null,
+        };
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -92,6 +78,29 @@ function Chatbox() {
       });
   }
 
+  function renderTable(tableData) {
+    return (
+      <table className="chat-table">
+        <thead>
+          <tr>
+            {tableData.headers.map((header, index) => (
+              <th key={index}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {tableData.rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
   function clickClearBtn() {
     fetch("/clear", {
       method: "POST",
@@ -105,7 +114,7 @@ function Chatbox() {
   function clickEnterBtn(e) {
     if (e.keyCode === 13) {
       e.preventDefault();
-      clickAskBtn(e);
+      clickAskBtn();
     }
   }
 
@@ -122,7 +131,6 @@ function Chatbox() {
 
   return (
     <>
-      {/* Messages */}
       <div className="messages-container">
         <div className="messages">
           {messages.map((message, index) => (
@@ -137,20 +145,20 @@ function Chatbox() {
                   message.messageType === "user" ? "user-bubble" : "bot-bubble"
                 }`}
               >
-                <p className="message-content">{message.content}</p>
+                {message.content && <p className="message-content">{message.content}</p>}
+                {message.table && renderTable(message.table)}
                 {message.image && (
                   <div
                     className="message-image"
-                    onClick={() => showImageFullScreen(`${message.image}.png`)} // Add .png for fullscreen
+                    onClick={() => showImageFullScreen(`${message.image}.png`)}
                   >
                     <img
-                      src={`${message.image}.png?t=${Date.now()}`} // Cache busting
+                      src={`${message.image}.png?t=${Date.now()}`}
                       alt={message.content || "Message Attachment"}
-                      onError={(e) => (e.target.src = "/assets/fallback-image.png")} // Handle broken URLs
+                      onError={(e) => (e.target.src = "/assets/fallback-image.png")}
                     />
                   </div>
                 )}
-
                 <span className="message-timestamp">{message.timestamp}</span>
               </div>
             </div>
@@ -158,7 +166,6 @@ function Chatbox() {
           {isLoading && (
             <div className="message-row message-row-bot">
               <div className="message-bubble bot-bubble">
-                {/* Loader icon */}
                 <svg
                   className="loader-icon"
                   xmlns="http://www.w3.org/2000/svg"
@@ -187,7 +194,6 @@ function Chatbox() {
         </div>
       </div>
 
-      {/* Input Area */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -209,7 +215,6 @@ function Chatbox() {
             disabled={!questionInput.trim() || isLoading}
             className="send-button"
           >
-            {/* Send icon */}
             <svg
               className="send-icon"
               xmlns="http://www.w3.org/2000/svg"
