@@ -3,7 +3,7 @@ function Navbar() {
       <nav className="navbar">
         <div className="navbar-content">
           <div className="navbar-right">
-            <span className="company-name">BestAI</span>
+            <span className="name">Data Analyzer</span>
           </div>
         </div>
       </nav>
