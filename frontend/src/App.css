@@ -1,4 +1,37 @@
-/* General Styles */
+:root{
+  --background-color: #fff;
+  --navbar-background-color:#efefef;
+
+  --text-color1:#000;
+  
+  --general-color1:#273c75;
+  --general-color2:#192a56;
+  --upload-area-border-color:#bbbbbb;
+  --upload-area-drag-background-color:rgba(25, 42, 86, 0.125);
+  --text-color2:#333;
+  --text-color3:#888;
+  --input-background-color:#ddd;
+
+  --table-text-color:#ddd;
+  --scrollbar-background-color:#d5d5d5;
+}
+.darkmode{
+  --background-color: #000;
+  --navbar-background-color:#111;
+  --text-color1:#fff;
+  
+  --general-color1:#c4a853;
+  --general-color2:#8a7132;
+  --upload-area-border-color:#4a4a4a;
+  --upload-area-drag-background-color:rgba(196, 168, 83, 0.125);
+  --text-color2:#ccc;
+  --text-color3:#777;
+  --input-background-color:#333;
+
+  --table-text-color:#ddd;
+  --scrollbar-background-color:#1a1a1a;
+}
+
 body, html {
     margin: 0;
     padding: 0;
@@ -12,22 +45,31 @@ body, html {
   top: 0;
   z-index: 1000;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   padding: 0 20px;
-  background-color: #000;
-  color: #fff;
+  background-color: var(--navbar-background-color);
+  color: var(--text-color1);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
-
+.navbar-left{
+  float:left;
+}
 .navbar-right {
   text-align: right;
   font-weight: bold;
+  margin-left:auto;
 }
-
+.light-dark-mode-switch{
+  cursor:pointer;
+  user-select: none;
+}
+.aitallogo{
+  height:60px;
+  width:auto;
+}
 .company-name {
   font-size: 2.0rem;
-  color: #c4a853;
+  color: var(--general-color1);
 }
 
 /* Main App Container */
@@ -35,8 +77,8 @@ body, html {
   display: flex;
   flex-direction: column;
   height: 100vh; /* Use the full viewport height */
-  background-color: #000;
-  color: #fff;
+  background-color: var(--background-color);
+  color: var(--text-color1);
 }
 
 .content-container {
@@ -49,7 +91,7 @@ body, html {
   /* Sidebar Styles */
   .sidebar {
     width: 320px;
-    border-right: 1px solid #8a7132;
+    border-right: 1px solid var(--general-color2);
     padding: 24px;
     display: flex;
     flex-direction: column;
@@ -57,14 +99,14 @@ body, html {
   }
   
   .sidebar-title {
-    color: #c4a853;
+    color: var(--general-color1);
     font-weight: 600;
     margin-bottom: 16px;
   }
   
   .upload-area {
     flex: 1;
-    border: 2px dashed #4a4a4a;
+    border: 2px dashed var(--upload-area-border-color);
     border-radius: 8px;
     padding: 16px;
     display: flex;
@@ -77,14 +119,14 @@ body, html {
   }
   
   .upload-area.drag-active {
-    border-color: #c4a853;
-    background-color: rgba(196, 168, 83, 0.125);
+    border-color: var(--general-color1);
+    background-color: var(--upload-area-drag-background-color);
   }
   
   .upload-icon {
     width: 48px;
     height: 48px;
-    color: #8a7132;
+    color: var(--general-color2);
   }
   
   .upload-text {
@@ -93,20 +135,20 @@ body, html {
   
   .upload-text p {
     font-size: 14px;
-    color: #ccc;
+    color: var(--text-color2);
     margin-bottom: 8px;
   }
   
   .browse-button {
     background: none;
     border: none;
-    color: #c4a853;
+    color: var(--general-color1);
     cursor: pointer;
     font-size: 14px;
   }
   
   .browse-button:hover {
-    color: #8a7132;
+    color: var(--general-color2);
   }
   
   .file-input {
@@ -115,7 +157,7 @@ body, html {
   
   .supported-formats {
     font-size: 12px;
-    color: #777;
+    color: var(--text-color3);
     margin-top: 8px;
   }
   
@@ -165,12 +207,12 @@ body, html {
   }
   
   .user-bubble {
-    background-color: #c4a853;
-    color: #000;
+    background-color: var(--general-color1);
+    color: var(--background-color);
   }
   
   .bot-bubble {
-    background-color: #333;
+    background-color: var(--input-background-color);
   }
   
   .message-content {
@@ -200,7 +242,7 @@ body, html {
     width: 24px;
     height: 24px;
     animation: spin 1s linear infinite;
-    color: #fff;
+    color: var(--text-color1);
   }
   
   @keyframes spin {
@@ -211,9 +253,9 @@ body, html {
   
   /* Input Area Styles */
   .input-form {
-    border-top: 1px solid #8a7132;
+    border-top: 1px solid var(--general-color2);
     padding: 16px;
-    background-color: #000;
+    background-color: var(--background-color);
   }
   
   .input-container {
@@ -225,22 +267,22 @@ body, html {
   
   .input-field {
     flex: 1;
-    background-color: #333;
+    background-color: var(--input-background-color);
     border: none;
     border-radius: 8px;
     padding: 12px 16px;
-    color: #fff;
+    color: var(--text-color1);
     font-size: 14px;
   }
   
   .input-field:focus {
     outline: none;
-    border: 1px solid #c4a853;
+    border: 1px solid var(--general-color1);
   }
   
   .send-button, .clear-button {
-    background-color: #c4a853;
-    color: #000;
+    background-color: var(--general-color1);
+    color: var(--background-color);
     border: none;
     border-radius: 8px;
     padding: 0 16px;
@@ -250,7 +292,7 @@ body, html {
   }
   
   .send-button:hover, .clear-button:hover {
-    background-color: #8a7132;
+    background-color: var(--general-color2);
   }
   
   .send-icon {
@@ -260,13 +302,13 @@ body, html {
   
   .clear-button {
     background-color: transparent;
-    color: #c4a853;
-    border: 1px solid #c4a853;
+    color: var(--general-color1);
+    border: 1px solid var(--general-color1);
   }
   
   .clear-button:hover {
-    background-color: #c4a853;
-    color: #000;
+    background-color: var(--general-color1);
+    color: var(--background-color);
   }
   
   /* Overlay Styles */
@@ -299,13 +341,13 @@ body, html {
     right: -40px;
     background: none;
     border: none;
-    color: #fff;
+    color: var(--text-color1);
     font-size: 32px;
     cursor: pointer;
   }
   
   .overlay-close-button:hover {
-    color: #ccc;
+    color: var(--text-color2);
   }
   
   /* Scrollbar Styles */
@@ -314,16 +356,16 @@ body, html {
   }
   
   ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: var(--scrollbar-background-color);
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #8a7132;
+    background: var(--general-color2);
     border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #c4a853;
+    background: var(--general-color1);
   }
   
   /* Prevent Scrolling when Overlay is Open */
@@ -344,14 +386,14 @@ body, html {
   }
   
   .chat-table th, .chat-table td {
-    border: 1px solid #c4a853;
+    border: 1px solid var(--general-color1);
     padding: 8px;
     text-align: left;
   }
   
   .chat-table th {
-    background-color: #ddd;
-    color: #000000;
+    background-color: var(--table-text-color);
+    color: var(--background-color);
     font-weight: bold;
   }
   
