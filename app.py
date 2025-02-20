@@ -11,9 +11,6 @@ from langgraph.checkpoint.memory import MemorySaver
 from werkzeug.utils import secure_filename
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.ERROR)
-
 UPLOAD_FOLDER = "uploads"
 
 load_dotenv()
