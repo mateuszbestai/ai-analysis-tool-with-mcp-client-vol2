@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ImageOverlay from "./ImageOverlay";
+import Markdown from 'react-markdown'
 
 function Chatbox() {
   const [messages, setMessages] = useState([]);
@@ -145,7 +146,7 @@ function Chatbox() {
                   message.messageType === "user" ? "user-bubble" : "bot-bubble"
                 }`}
               >
-                {message.content && <p className="message-content">{message.content}</p>}
+                {message.content && <p className="message-content"><Markdown>{message.content}</Markdown></p>}
                 {message.table && renderTable(message.table)}
                 {message.image && (
                   <div
