@@ -3,10 +3,10 @@ json_schema_generate = {
     "description": "Generate an SQL query",
     "type": "object",
     "properties": {
-        "query":{
-            "type":"string",
+        "query": {
+            "type": "string",
             "description": "The generated SQL query",
-            "default":None
+            "default": None,
         }
     },
     "required": ["query"],

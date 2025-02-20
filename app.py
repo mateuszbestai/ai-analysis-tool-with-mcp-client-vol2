@@ -22,6 +22,7 @@ app.secret_key = os.getenv("APP_SECRET_KEY")
 # Configure upload folder and allowed extensions
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["SESSION_TYPE"] = "filesystem"
+# app.config["SESSION_FILE_DIR"] = "./flask_session"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1000 * 1000
 Session(app)
 
@@ -30,24 +31,30 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 ALLOWED_EXTENSIONS = {".csv", ".xml"}
 
+
 def get_extension(filename: str):
     _, extension = os.path.splitext(filename)
     return extension.lower()
 
+
 def allowed_file(filename: str):
     return "." in filename and get_extension(filename) in ALLOWED_EXTENSIONS
 
+
 def defaultdictoverride():
     return defaultdict(dict)
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
 # Endpoint for frontend to easily get images.
 @app.route("/assets/<filename>")
 def serve_image(filename):
     return send_from_directory("frontend/dist/assets", filename)
+
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
@@ -80,6 +87,7 @@ def upload_file():
         logging.error("Error during file upload: %s", str(e))
         return jsonify({"error": "Failed to upload file"}), 500
 
+
 @app.route("/clear", methods=["POST"])
 def clear_chatlog():
     if session.get("agent_context"):
@@ -89,6 +97,7 @@ def clear_chatlog():
         return "cleared", 200
     else:
         return "no agent session, nothing to clear", 200
+
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
@@ -113,8 +122,11 @@ def ask_question():
     if "table" in question.lower() or "rows" in question.lower():
         # Extract the number of rows requested
         import re
+
         match = re.search(r"(\d+)\s*rows", question.lower())
-        num_rows = int(match.group(1)) if match else 10  # Default to 10 rows if no number is specified
+        num_rows = (
+            int(match.group(1)) if match else 10
+        )  # Default to 10 rows if no number is specified
 
         # Limit rows to the maximum available rows in the DataFrame
         num_rows = min(num_rows, len(df))
@@ -122,12 +134,14 @@ def ask_question():
         # Prepare table data
         table_data = {
             "headers": df.columns.tolist(),
-            "rows": df.head(num_rows).values.tolist()
+            "rows": df.head(num_rows).values.tolist(),
         }
-        return jsonify({
-            "answer": f"Here are the first {num_rows} rows of the data:",
-            "table": table_data
-        })
+        return jsonify(
+            {
+                "answer": f"Here are the first {num_rows} rows of the data:",
+                "table": table_data,
+            }
+        )
 
     # General question handling (fallback to agent)
     try:
@@ -174,6 +188,7 @@ def forecast():
     except Exception as e:
         logging.error("Error in /forecast endpoint: %s", str(e))
         return jsonify({"error": "Failed to generate forecast"}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

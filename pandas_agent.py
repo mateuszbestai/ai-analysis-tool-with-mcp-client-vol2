@@ -45,6 +45,7 @@ patch_langchain_openai_toolcall()
 
 saver = MemorySaver()
 
+
 class PandasAgent:
     graph: CompiledStateGraph
     dataframe: pandas.DataFrame
@@ -236,11 +237,12 @@ class PandasAgent:
         config = {
             "thread_id": "1",
             # Increase this to, say, 50 or 100
-            "recursion_limit": 50
-            
+            "recursion_limit": 50,
         }
         try:
-            messages = self.graph.invoke({"messages": [HumanMessage(content=message)]}, config)
+            messages = self.graph.invoke(
+                {"messages": [HumanMessage(content=message)]}, config
+            )
             if full_context:
                 return messages
             return messages["messages"][-1].content
@@ -250,7 +252,6 @@ class PandasAgent:
         except Exception as e:
             logger.exception(e)
             return CRITICAL_FAILURE_FALLBACK_MESSAGE
-
 
     def clear_memory(self):
         logger.info("Clearing chat context (storage/memory)")

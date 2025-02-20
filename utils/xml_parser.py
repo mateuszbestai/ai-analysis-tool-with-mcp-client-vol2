@@ -38,7 +38,7 @@ def ensure_attr(
     return num
 
 
-def _xml_to_dicts(filename: str | None, xml_buf: str | None=None):
+def _xml_to_dicts(filename: str | None, xml_buf: str | None = None):
     if xml_buf is None:
         tree = ET.parse(filename)
     else:
@@ -105,9 +105,11 @@ def _xml_to_dicts(filename: str | None, xml_buf: str | None=None):
 
     return content, metadata
 
+
 def xml_str_to_df(xml: str):
     return pandas.DataFrame.from_dict(_xml_to_dicts(None, xml)[0])
-    
+
+
 def xml_file_to_df(filename: str):
     return pandas.DataFrame.from_dict(_xml_to_dicts(filename)[0])
 

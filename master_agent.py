@@ -16,8 +16,11 @@ from schemas import *
 
 from pandas_agent import *
 from sql_agent import *
+
 load_dotenv()
-#Miało to jakoś łączyć tego sql agenta i pandas agenta ale narazie chyba nie jest to potrzebne
-class sql_agent():
+
+
+# Miało to jakoś łączyć tego sql agenta i pandas agenta ale narazie chyba nie jest to potrzebne
+class sql_agent:
     def __init__(self):
         pass
