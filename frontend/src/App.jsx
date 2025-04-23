@@ -1,7 +1,8 @@
 import "./App.css";
 import Navbar from "./components/Navbar";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Chatbox from "./components/Chatbox";
+import DatabaseConnectionManager from "./components/DatabaseConnectionManager";
 
 function App() {
   const [fileName, setFileName] = useState("");
@@ -44,6 +45,10 @@ function App() {
 
   function uploadFile(file) {
     const formData = new FormData();
+    if(file.size >= 1024*1024*50){
+      alert("File size too big. Max 50 MB.");
+      return;
+    }
     formData.append("file", file);
 
     fetch("/upload", {
@@ -105,10 +110,15 @@ function App() {
             />
             <p className="supported-formats">Supported formats: CSV, XML</p>
           </div>
+          
+          {/* Database Connection Manager */}
+          <div className="db-connection-container">
+            <DatabaseConnectionManager />
+          </div>
         </div>
 
         {/* Chat Area */}
-        <div className="chat-area">
+        <div className="chat-area" id="chatArea">
           <Chatbox />
         </div>
       </div>

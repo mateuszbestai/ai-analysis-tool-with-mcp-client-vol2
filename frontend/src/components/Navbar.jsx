@@ -1,17 +1,18 @@
 import { useState } from "react";
-import logoaitalents from "../assets/logoaitalents.png"
+
 function Navbar() {
   const [lightMode, setLightMode] = useState(true);
-  function toggleMode(){
-    if(lightMode){
-      document.body.classList.add('darkmode')
+
+  function toggleMode() {
+    if(lightMode) {
+      document.body.classList.add('darkmode');
       setLightMode(false);
-    }
-    else{
+    } else {
       document.body.classList.remove('darkmode');
       setLightMode(true);
     }
   }
+
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -19,16 +20,12 @@ function Navbar() {
           <span className="material-symbols-outlined">
             { lightMode ? "light_mode" : "dark_mode"}
           </span>
-
         </div>
       </div>
 
       <div className="navbar-right">
-
         <span className="name">Data Analyzer</span>
       </div>
-      <img src={logoaitalents} alt="" className="aitallogo"></img>
-
     </nav>
   );
 }

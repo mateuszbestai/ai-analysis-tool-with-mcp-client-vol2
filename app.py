@@ -1,3 +1,4 @@
+# app.py
 from collections import defaultdict
 import os
 import uuid
@@ -6,6 +7,7 @@ from flask_session import Session
 import pandas as pd
 from dotenv import load_dotenv
 import pandas_agent
+from sql_agent import SQLAgent  # Import the modified SQLAgent that uses MCP client
 from utils.xml_parser import xml_str_to_df
 from langgraph.checkpoint.memory import MemorySaver
 from werkzeug.utils import secure_filename
@@ -19,7 +21,6 @@ app.secret_key = os.getenv("APP_SECRET_KEY")
 # Configure upload folder and allowed extensions
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["SESSION_TYPE"] = "filesystem"
-# app.config["SESSION_FILE_DIR"] = "./flask_session"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1000 * 1000
 Session(app)
 
@@ -28,30 +29,23 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 ALLOWED_EXTENSIONS = {".csv", ".xml"}
 
-
 def get_extension(filename: str):
     _, extension = os.path.splitext(filename)
     return extension.lower()
 
-
 def allowed_file(filename: str):
     return "." in filename and get_extension(filename) in ALLOWED_EXTENSIONS
 
-
 def defaultdictoverride():
     return defaultdict(dict)
-
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
-# Endpoint for frontend to easily get images.
 @app.route("/assets/<filename>")
 def serve_image(filename):
     return send_from_directory("frontend/dist/assets", filename)
-
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
@@ -78,12 +72,335 @@ def upload_file():
         agent_context = MemorySaver()
         agent_context.storage.default_factory = defaultdictoverride
         session["agent_context"] = agent_context
+        session["mode"] = "csv"  # Set mode to CSV
 
         return jsonify({"message": "File uploaded successfully"}), 200
     except Exception as e:
         logging.error("Error during file upload: %s", str(e))
         return jsonify({"error": "Failed to upload file"}), 500
 
+@app.route("/connect_db", methods=["POST"])
+def connect_database():
+    data = request.get_json()
+    server = data.get("server")
+    database = data.get("database")
+    username = data.get("username")
+    password = data.get("password")
+    
+    if not all([server, database, username, password]):
+        return jsonify({"error": "All database connection parameters are required"}), 400
+    
+    try:
+        # Create SQL agent with MCP client
+        agent_context = MemorySaver()
+        agent_context.storage.default_factory = defaultdictoverride
+        sql_agent = SQLAgent(server, database, username, password, agent_context)
+        
+        # Store SQL agent connection info in session
+        session["sql_server"] = server
+        session["sql_database"] = database
+        session["sql_username"] = username
+        session["sql_password"] = password
+        session["agent_context"] = agent_context
+        session["mode"] = "sql"  # Explicitly set mode to SQL
+        
+        # Force session to save
+        session.modified = True
+        
+        # Get table list for confirmation
+        tables = sql_agent.tables
+        
+        # Get token from MCP client if available
+        token = None
+        if hasattr(sql_agent, 'mcp_client') and hasattr(sql_agent.mcp_client, 'token'):
+            token = sql_agent.mcp_client.token
+        
+        return jsonify({
+            "message": "Database connected successfully",
+            "tables": tables,
+            "token": token
+        }), 200
+    except Exception as e:
+        logging.error("Error connecting to database: %s", str(e))
+        return jsonify({"error": f"Failed to connect to database: {str(e)}"}), 500
+
+# Replace the get_table_preview route in app.py with this updated version
+
+@app.route("/get_table_preview", methods=["POST"])
+def get_table_preview():
+    data = request.get_json()
+    table_name = data.get("table")
+    
+    if not table_name:
+        return jsonify({"error": "Table name is required"}), 400
+    
+    # Add additional logging
+    logging.info(f"Received preview request for table: {table_name}")
+    logging.info(f"Session mode: {session.get('mode')}")
+    
+    # First check if we have a database connection
+    if session.get("mode") != "sql" or not all([
+        session.get("sql_server"),
+        session.get("sql_database"),
+        session.get("sql_username"),
+        session.get("sql_password")
+    ]):
+        return jsonify({"error": "No database connection active"}), 400
+    
+    try:
+        # Get token from request headers if available
+        auth_header = request.headers.get('Authorization')
+        token = None
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            logging.info(f"Token received in request: {token[:10]}...")
+        
+        # Create agent context if needed
+        agent_context = session.get("agent_context")
+        if agent_context is None:
+            agent_context = MemorySaver()
+            agent_context.storage.default_factory = defaultdictoverride
+            session["agent_context"] = agent_context
+        
+        # Create SQL agent
+        logging.info("Creating SQLAgent for table preview")
+        sql_agent = SQLAgent(
+            session.get("sql_server"),
+            session.get("sql_database"),
+            session.get("sql_username"),
+            session.get("sql_password"),
+            agent_context
+        )
+        
+        # If we received a token in the request, make sure the MCP client uses it
+        if token and hasattr(sql_agent, 'mcp_client'):
+            sql_agent.mcp_client.token = token
+            logging.info("Updated MCP client with token from request")
+        
+        # Get table preview
+        logging.info(f"Requesting preview for table {table_name}")
+        result = sql_agent.get_table_preview(table_name)
+        
+        # Handle different return types
+        if isinstance(result, pd.DataFrame):
+            logging.info(f"Preview successful, got DataFrame with {len(result)} rows")
+            # Handle empty DataFrame
+            if result.empty:
+                return jsonify({
+                    "message": f"Preview of {table_name} (empty table)",
+                    "table": {
+                        "headers": [],
+                        "rows": []
+                    }
+                }), 200
+                
+            # Prepare table data for non-empty DataFrame
+            table_data = {
+                "headers": result.columns.tolist(),
+                "rows": result.values.tolist(),
+            }
+            return jsonify({
+                "message": f"Preview of {table_name}",
+                "table": table_data
+            }), 200
+        elif isinstance(result, tuple) and len(result) == 2:
+            # Handle the case where get_table_preview returns (df, error)
+            df, error = result
+            if df is not None and isinstance(df, pd.DataFrame):
+                logging.info(f"Preview successful, got DataFrame with {len(df)} rows")
+                
+                # Handle empty DataFrame
+                if df.empty:
+                    return jsonify({
+                        "message": f"Preview of {table_name} (empty table)",
+                        "table": {
+                            "headers": [],
+                            "rows": []
+                        }
+                    }), 200
+                
+                # Prepare table data for non-empty DataFrame
+                table_data = {
+                    "headers": df.columns.tolist(),
+                    "rows": df.values.tolist(),
+                }
+                return jsonify({
+                    "message": f"Preview of {table_name}",
+                    "table": table_data
+                }), 200
+            else:
+                logging.error(f"Preview error: {error}")
+                return jsonify({"error": f"Error retrieving table: {error}"}), 500
+        else:
+            logging.error(f"Invalid result type: {type(result).__name__}")
+            return jsonify({"error": f"Error retrieving table: Unexpected response format"}), 500
+    except Exception as e:
+        logging.error("Error getting table preview: %s", str(e), exc_info=True)
+        return jsonify({"error": f"Failed to get table preview: {str(e)}"}), 500
+
+@app.route("/check_connection_status", methods=["GET"])
+def check_connection_status():
+    """Check if there's an active database connection"""
+    # Check if we have the essential connection parameters
+    if all([
+        session.get("sql_server"),
+        session.get("sql_database"),
+        session.get("sql_username"),
+        session.get("sql_password")
+    ]):
+        try:
+            # Update the mode to ensure it's set correctly
+            session["mode"] = "sql"
+            
+            # Create agent context if needed
+            agent_context = session.get("agent_context")
+            if agent_context is None:
+                agent_context = MemorySaver()
+                agent_context.storage.default_factory = defaultdictoverride
+                session["agent_context"] = agent_context
+            
+            # Create SQL agent to verify connection
+            logging.info("Creating SQL agent to verify connection")
+            sql_agent = SQLAgent(
+                session.get("sql_server"),
+                session.get("sql_database"),
+                session.get("sql_username"),
+                session.get("sql_password"),
+                agent_context
+            )
+            
+            # Store the MCP client token in a cookie for later use
+            if hasattr(sql_agent, 'mcp_client') and sql_agent.mcp_client.token:
+                logging.info("Storing MCP token in cookie")
+                response = jsonify({
+                    "connected": True,
+                    "database": session.get("sql_database"),
+                    "tables": sql_agent.tables
+                })
+                response.set_cookie(
+                    "mcp_token", 
+                    sql_agent.mcp_client.token,
+                    httponly=True,
+                    secure=True,
+                    samesite='Strict',
+                    max_age=28800  # 8 hours
+                )
+                return response, 200
+            
+            return jsonify({
+                "connected": True,
+                "database": session.get("sql_database"),
+                "tables": sql_agent.tables
+            }), 200
+        except Exception as e:
+            logging.error(f"Error checking connection status: {str(e)}")
+            # Clear the session data if connection verification fails
+            session.pop("sql_server", None)
+            session.pop("sql_database", None)
+            session.pop("sql_username", None)
+            session.pop("sql_password", None)
+            session["mode"] = "csv"
+            
+            return jsonify({
+                "connected": False,
+                "error": str(e)
+            }), 200
+    else:
+        # Try to recover connection details from MCP token if present
+        auth_header = request.headers.get('Authorization')
+        mcp_token_cookie = request.cookies.get('mcp_token')
+        token = None
+        
+        # Check both Authorization header and cookie
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            logging.info("Found token in Authorization header")
+        elif mcp_token_cookie:
+            token = mcp_token_cookie
+            logging.info("Found token in cookie")
+            
+        if token:
+            try:
+                # Create a temporary MCP client to validate the token
+                from mcp_client import MCPClient
+                temp_client = MCPClient()
+                temp_client.token = token  # Set token first
+                
+                # Try to fetch tables as a validation method
+                tables, error = temp_client.get_tables()
+                
+                if not error and tables:
+                    logging.info(f"Successfully validated token and retrieved {len(tables)} tables")
+                    # Get more info about the connection if possible
+                    connection_info = {}
+                    try:
+                        # Try the new validate-token endpoint if it exists
+                        validate_response = requests.post(
+                            urljoin(temp_client.base_url, "/api/validate-token"),
+                            headers={"Authorization": f"Bearer {token}"}
+                        )
+                        if validate_response.status_code == 200:
+                            connection_info = validate_response.json()
+                    except Exception as validate_error:
+                        logging.warning(f"Token validation endpoint not available: {str(validate_error)}")
+                    
+                    # Restore session mode
+                    session["mode"] = "sql"
+                    
+                    # Create agent context if not exists
+                    if not session.get("agent_context"):
+                        agent_context = MemorySaver()
+                        agent_context.storage.default_factory = defaultdictoverride
+                        session["agent_context"] = agent_context
+                    
+                    # Store token in a cookie for future requests
+                    response = jsonify({
+                        "connected": True,
+                        "database": connection_info.get("database", "Connected Database"),
+                        "tables": tables
+                    })
+                    response.set_cookie(
+                        "mcp_token", 
+                        token,
+                        httponly=True,
+                        secure=True,
+                        samesite='Strict',
+                        max_age=28800  # 8 hours
+                    )
+                    return response, 200
+                else:
+                    logging.error(f"Token validation failed: {error}")
+            except Exception as token_error:
+                logging.error(f"Error recovering connection from token: {str(token_error)}")
+                
+        return jsonify({
+            "connected": False
+        }), 200
+    
+@app.route("/refresh_tables", methods=["POST"])
+def refresh_tables():
+    """Refresh the list of tables from the database"""
+    if session.get("mode") != "sql":
+        return jsonify({"error": "No database connection active"}), 400
+    
+    try:
+        # Create SQL agent to get fresh tables
+        sql_agent = SQLAgent(
+            session.get("sql_server"),
+            session.get("sql_database"),
+            session.get("sql_username"),
+            session.get("sql_password"),
+            session.get("agent_context")
+        )
+        
+        # SQLAgent's MCP client already handles table refreshing
+        return jsonify({
+            "message": "Tables refreshed successfully",
+            "tables": sql_agent.tables
+        }), 200
+    except Exception as e:
+        logging.error(f"Error refreshing tables: {str(e)}")
+        return jsonify({"error": f"Failed to refresh tables: {str(e)}"}), 500
 
 @app.route("/clear", methods=["POST"])
 def clear_chatlog():
@@ -95,12 +412,26 @@ def clear_chatlog():
     else:
         return "no agent session, nothing to clear", 200
 
-
 @app.route("/ask", methods=["POST"])
 def ask_question():
     data = request.get_json()
     question = data.get("question", "").strip()
+    
+    if not question:
+        return jsonify({"answer": "Please provide a valid question."}), 400
+    
+    # Check if we're in SQL or CSV mode
+    mode = session.get("mode", "csv")
+    
+    if mode == "csv":
+        return handle_csv_question(question)
+    elif mode == "sql":
+        return handle_sql_question(question)
+    else:
+        return jsonify({"error": "Invalid mode. Please upload a file or connect to a database."}), 400
 
+def handle_csv_question(question):
+    """Handle questions in CSV mode"""
     # Retrieve DataFrame from the session
     csv_filepath = session.get("csv_filepath")
     if not csv_filepath:
@@ -112,14 +443,10 @@ def ask_question():
         logging.error("Error reading CSV file: %s", str(e))
         return jsonify({"error": "Failed to process the uploaded file"}), 500
 
-    if not question:
-        return jsonify({"answer": "Please provide a valid question."}), 400
-
     # Handle table-related questions
     if "table" in question.lower() or "rows" in question.lower():
         # Extract the number of rows requested
         import re
-
         match = re.search(r"(\d+)\s*rows", question.lower())
         num_rows = (
             int(match.group(1)) if match else 10
@@ -155,6 +482,75 @@ def ask_question():
         logging.error("Error in /ask endpoint: %s", str(e))
         return jsonify({"error": "Failed to process the question."}), 500
 
+def handle_sql_question(question):
+    """Handle questions in SQL mode"""
+    # Check if we have database connection info
+    if not all([
+        session.get("sql_server"),
+        session.get("sql_database"),
+        session.get("sql_username"),
+        session.get("sql_password")
+    ]):
+        return jsonify({"error": "Database connection information is missing"}), 400
+    
+    try:
+        agent_context = session.get("agent_context")
+        if agent_context is None:
+            agent_context = MemorySaver()
+            agent_context.storage.default_factory = defaultdictoverride
+        
+        # Create SQL agent with MCP client
+        sql_agent = SQLAgent(
+            session.get("sql_server"),
+            session.get("sql_database"),
+            session.get("sql_username"),
+            session.get("sql_password"),
+            agent_context
+        )
+        
+        # Process the question
+        answer = sql_agent.invoke(question)
+        session["agent_context"] = agent_context  # Save updated context
+        
+        # Check if a chart was generated
+        if sql_agent.extra_content:
+            return jsonify({
+                "answer": answer,
+                "image": sql_agent.extra_content,
+                "table": None
+            })
+        
+        # Check if the answer contains a table-like structure
+        if isinstance(answer, str) and answer.count("\n") > 2 and "|" in answer:
+            # Potential table output, try to parse it
+            try:
+                # Simple parsing logic for table format
+                lines = answer.strip().split("\n")
+                if len(lines) > 2:
+                    headers = [h.strip() for h in lines[0].split("|") if h.strip()]
+                    rows = []
+                    for line in lines[2:]:
+                        if "|" in line and not line.strip().startswith("+"):
+                            row = [cell.strip() for cell in line.split("|") if cell.strip()]
+                            if row:
+                                rows.append(row)
+                    
+                    if headers and rows:
+                        return jsonify({
+                            "answer": "Here are the results:",
+                            "table": {
+                                "headers": headers,
+                                "rows": rows
+                            }
+                        })
+            except Exception as parsing_error:
+                logging.error(f"Error parsing table-like output: {str(parsing_error)}")
+        
+        # Return plain text answer if no table structure detected
+        return jsonify({"answer": answer, "image": None, "table": None})
+    except Exception as e:
+        logging.error("Error in SQL question handling: %s", str(e))
+        return jsonify({"error": f"Failed to process the SQL question: {str(e)}"}), 500
 
 @app.route("/forecast", methods=["POST"])
 def forecast():
@@ -186,6 +582,77 @@ def forecast():
         logging.error("Error in /forecast endpoint: %s", str(e))
         return jsonify({"error": "Failed to generate forecast"}), 500
 
+@app.route("/switch_mode", methods=["POST"])
+def switch_mode():
+    """Switch between CSV and SQL modes"""
+    data = request.get_json()
+    mode = data.get("mode")
+    
+    if mode not in ["csv", "sql"]:
+        return jsonify({"error": "Invalid mode"}), 400
+    
+    # Check if we have the necessary data for the mode
+    if mode == "csv" and not session.get("csv_filepath"):
+        return jsonify({"error": "No CSV file uploaded"}), 400
+    
+    if mode == "sql" and not all([
+        session.get("sql_server"),
+        session.get("sql_database"),
+        session.get("sql_username"),
+        session.get("sql_password")
+    ]):
+        return jsonify({"error": "Database connection information is missing"}), 400
+    
+    # Set the mode
+    session["mode"] = mode
+    return jsonify({"message": f"Switched to {mode.upper()} mode successfully"}), 200
+
+# Add this endpoint to your app.py file
+
+@app.route("/disconnect", methods=["POST"])
+def disconnect_database():
+    """Disconnect from the database and clean up resources"""
+    if session.get("mode") != "sql":
+        return jsonify({"error": "No database connection active"}), 400
+    
+    try:
+        # Create SQL agent to access MCP client
+        agent_context = session.get("agent_context")
+        if agent_context is None:
+            agent_context = MemorySaver()
+            agent_context.storage.default_factory = defaultdictoverride
+        
+        sql_agent = SQLAgent(
+            session.get("sql_server"),
+            session.get("sql_database"),
+            session.get("sql_username"),
+            session.get("sql_password"),
+            agent_context
+        )
+        
+        # Use the MCP client to disconnect
+        sql_agent.mcp_client.disconnect()
+        
+        # Clear session data
+        session.pop("sql_server", None)
+        session.pop("sql_database", None)
+        session.pop("sql_username", None)
+        session.pop("sql_password", None)
+        session["mode"] = "csv"  # Reset to CSV mode
+        
+        # Return success
+        return jsonify({"message": "Disconnected successfully"}), 200
+    except Exception as e:
+        logging.error(f"Error disconnecting from database: {str(e)}")
+        
+        # Still clear session data even if there was an error
+        session.pop("sql_server", None)
+        session.pop("sql_database", None)
+        session.pop("sql_username", None)
+        session.pop("sql_password", None)
+        session["mode"] = "csv"
+        
+        return jsonify({"error": f"Error during disconnect: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

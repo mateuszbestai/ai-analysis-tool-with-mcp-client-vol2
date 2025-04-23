@@ -403,4 +403,596 @@ body, html {
     word-wrap: break-word;
   }
   
-  
+  /* Database connection styles */
+.db-connection-container {
+  margin-top: 20px;
+}
+
+.db-connect-button {
+  width: 100%;
+  background-color: var(--general-color1);
+  color: var(--background-color);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.db-connect-button:hover {
+  background-color: var(--general-color2);
+}
+
+/* Modal styles */
+.modal {
+  display: block;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: var(--background-color);
+  color: var(--text-color1);
+  margin: 10% auto;
+  padding: 20px;
+  border: 1px solid var(--general-color2);
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.close {
+  color: var(--text-color1);
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--general-color1);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid var(--general-color2);
+  background-color: var(--input-background-color);
+  color: var(--text-color1);
+}
+
+.btn-primary {
+  background-color: var(--general-color1);
+  color: var(--background-color);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background-color: var(--general-color2);
+}
+
+.btn-primary:disabled {
+  background-color: var(--text-color3);
+  cursor: not-allowed;
+}
+
+.hidden {
+  display: none;
+}
+
+.success-message {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: rgba(0, 128, 0, 0.1);
+  border-radius: 4px;
+  border-left: 4px solid green;
+}
+
+.system-message {
+  background-color: rgba(0, 128, 0, 0.1);
+  color: var(--text-color1);
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+#tableList {
+  list-style-type: none;
+  padding: 0;
+}
+
+#tableList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--upload-area-border-color);
+}
+
+.btn-small {
+  background-color: var(--general-color1);
+  color: var(--background-color);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+.btn-small:hover {
+  background-color: var(--general-color2);
+}
+
+.assistant-message {
+  color: var(--text-color1);
+  padding: 8px 16px;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+/* Table control styles */
+.chat-table-wrapper {
+  position: relative;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.table-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.table-control-btn {
+  background: none;
+  border: none;
+  color: var(--general-color1);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-control-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--general-color2);
+}
+
+.material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* Preview container styles */
+.preview-container {
+  margin-bottom: 24px;
+  border: 1px solid var(--general-color1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--general-color1);
+  color: var(--background-color);
+}
+
+.preview-title {
+  font-weight: bold;
+}
+
+.preview-controls {
+  display: flex;
+}
+
+.preview-btn {
+  background: none;
+  border: none;
+  color: var(--background-color);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.preview-container .table-container {
+  padding: 12px;
+  overflow-x: auto;
+}
+
+/* Ensure chat tables inside preview containers have proper spacing */
+.preview-container .chat-table {
+  margin-top: 0;
+}
+
+/* Database connection tab styles */
+.connection-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--general-color2);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  color: var(--text-color1);
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+}
+
+.tab-btn.active {
+  color: var(--general-color1);
+  font-weight: 600;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--general-color1);
+}
+
+.tab-btn:hover {
+  color: var(--general-color2);
+}
+
+/* Saved connections styling */
+.saved-connections {
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--upload-area-border-color);
+  border-radius: 6px;
+}
+
+.no-connections {
+  padding: 15px;
+  text-align: center;
+  color: var(--text-color3);
+  font-style: italic;
+}
+
+.connection-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.connection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--upload-area-border-color);
+  cursor: pointer;
+}
+
+.connection-item:last-child {
+  border-bottom: none;
+}
+
+.connection-item:hover {
+  background-color: rgba(var(--general-color1-rgb), 0.05);
+}
+
+.connection-item.selected {
+  background-color: rgba(var(--general-color1-rgb), 0.1);
+}
+
+.connection-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.connection-name {
+  font-weight: 600;
+  color: var(--text-color1);
+}
+
+.connection-details {
+  font-size: 12px;
+  color: var(--text-color3);
+  margin-top: 4px;
+}
+
+.delete-connection-btn {
+  background: none;
+  border: none;
+  color: var(--text-color3);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-connection-btn:hover {
+  color: #d32f2f; /* Red color for delete */
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+/* Form hint */
+.form-hint {
+  font-size: 12px;
+  color: var(--text-color3);
+  margin-top: 4px;
+  display: block;
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--general-color1);
+  border: 1px solid var(--general-color1);
+  border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(var(--general-color1-rgb), 0.1);
+}
+
+/* Add RGB variables for rgba usage */
+:root {
+  --general-color1-rgb: 39, 60, 117;
+}
+
+.darkmode {
+  --general-color1-rgb: 196, 168, 83;
+}
+
+/* Connection Settings styles */
+.db-connection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.connection-info {
+  margin-top: 15px;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+}
+
+/* Table list inside connection settings */
+.connection-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-dropdown {
+    width: 100%;
+    right: 0;
+    left: 0;
+    top: 60px;
+    border-radius: 0;
+  }
+}
+
+/* Add these styles to your App.css file */
+
+/* Database connection manager improvements */
+.connection-actions {
+  display: flex;
+  margin: 20px 0;
+}
+
+.btn-danger {
+  background-color: #d32f2f; /* Red */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: #b71c1c; /* Darker red */
+}
+
+.btn-danger:disabled {
+  background-color: #e57373; /* Lighter red */
+  cursor: not-allowed;
+}
+
+.connection-info h3 {
+  color: var(--general-color1);
+  margin-bottom: 10px;
+}
+
+.connection-info p {
+  margin-bottom: 15px;
+}
+
+/* Connection status indicator */
+.connection-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: rgba(var(--general-color1-rgb), 0.1);
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.status-connected {
+  background-color: #4CAF50; /* Green */
+}
+
+.status-disconnected {
+  background-color: #F44336; /* Red */
+}
+
+/* Improved table list */
+.table-list-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--upload-area-border-color);
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+/* System message improvements */
+.system-message {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  text-align: center;
+  animation: fadeIn 0.5s;
+}
+
+.system-message.success {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid #4CAF50;
+}
+
+.system-message.warning {
+  background-color: rgba(255, 152, 0, 0.1);
+  border-left: 4px solid #FF9800;
+}
+
+.system-message.error {
+  background-color: rgba(244, 67, 54, 0.1);
+  border-left: 4px solid #F44336;
+}
+
+.system-message.info {
+  background-color: rgba(33, 150, 243, 0.1);
+  border-left: 4px solid #2196F3;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Improved button styles */
+.btn-primary, .btn-secondary, .btn-danger, .btn-small {
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-primary:active, .btn-secondary:active, .btn-danger:active, .btn-small:active {
+  transform: scale(0.98);
+}
+
+/* Icon in button */
+.btn-icon {
+  margin-right: 8px;
+}
+
+/* Connection item hover effect */
+.connection-item {
+  transition: background-color 0.2s;
+}
+
+.connection-item:hover {
+  background-color: rgba(var(--general-color1-rgb), 0.05);
+}
+
+/* Database connection status in sidebar */
+.db-status {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-color2);
+}
+
+.db-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.db-status-connected {
+  background-color: #4CAF50;
+}
+
+.db-status-disconnected {
+  background-color: #F44336;
+}
+
+/* Focus state for buttons */
+.btn-primary:focus, .btn-secondary:focus, .btn-danger:focus {
+  outline: 2px solid var(--general-color1);
+  outline-offset: 2px;
+}

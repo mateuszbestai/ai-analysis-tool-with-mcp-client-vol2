@@ -38,11 +38,20 @@ function Chatbox() {
     setQuestionInput("");
     setIsLoading(true);
 
+    // Get token if it exists
+    const token = localStorage.getItem("mcpToken");
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     fetch("/ask", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ question: questionInput }),
     })
       .then((response) => response.json())
@@ -79,32 +88,90 @@ function Chatbox() {
       });
   }
 
-  function renderTable(tableData) {
+  // Function to toggle table visibility
+  function toggleTableVisibility(tableId) {
+    const tableElement = document.getElementById(tableId);
+    if (tableElement) {
+      const isVisible = tableElement.style.display !== 'none';
+      tableElement.style.display = isVisible ? 'none' : 'table';
+      
+      // Update the button icon
+      const buttonElement = document.getElementById(`toggle-${tableId}`);
+      if (buttonElement) {
+        buttonElement.innerHTML = isVisible 
+          ? '<span class="material-symbols-outlined">visibility</span>'
+          : '<span class="material-symbols-outlined">visibility_off</span>';
+        buttonElement.title = isVisible ? 'Show table' : 'Hide table';
+      }
+    }
+  }
+
+  // Function to remove table
+  function removeTable(tableContainerId) {
+    const container = document.getElementById(tableContainerId);
+    if (container) {
+      container.remove();
+    }
+  }
+
+  function renderTable(tableData, index) {
+    const tableId = `table-${index}`;
+    const containerId = `table-container-${index}`;
+    
     return (
-      <table className="chat-table">
-        <thead>
-          <tr>
-            {tableData.headers.map((header, index) => (
-              <th key={index}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tableData.rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, cellIndex) => (
-                <td key={cellIndex}>{cell}</td>
+      <div id={containerId} className="chat-table-wrapper">
+        <div className="table-controls">
+          <button 
+            id={`toggle-${tableId}`} 
+            className="table-control-btn" 
+            title="Hide table" 
+            onClick={() => toggleTableVisibility(tableId)}
+          >
+            <span className="material-symbols-outlined">visibility_off</span>
+          </button>
+          <button 
+            className="table-control-btn" 
+            title="Remove table" 
+            onClick={() => removeTable(containerId)}
+          >
+            <span className="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+        <table id={tableId} className="chat-table">
+          <thead>
+            <tr>
+              {tableData.headers.map((header, index) => (
+                <th key={index}>{header}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {tableData.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex}>{cell !== null ? cell : ''}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   }
 
   function clickClearBtn() {
+    // Get token if it exists
+    const token = localStorage.getItem("mcpToken");
+    const headers = {};
+
+    // Add authorization header if token exists
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     fetch("/clear", {
       method: "POST",
+      headers
     }).then((res) => {
       if (res.ok) {
         setMessages([]);
@@ -147,7 +214,7 @@ function Chatbox() {
                 }`}
               >
                 {message.content && <p className="message-content"><Markdown>{message.content}</Markdown></p>}
-                {message.table && renderTable(message.table)}
+                {message.table && renderTable(message.table, index)}
                 {message.image && (
                   <div
                     className="message-image"
