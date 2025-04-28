@@ -1,5 +1,4 @@
 import "./App.css";
-import "./button-fix.css";
 import { useState, useRef, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Chatbox from "./components/Chatbox";

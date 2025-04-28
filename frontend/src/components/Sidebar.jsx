@@ -140,14 +140,12 @@ function Sidebar({ onFileUpload }) {
           className={`dashboard-tab ${activeTab === 'csv' ? 'active' : ''}`} 
           onClick={() => switchTab('csv')}
         >
-          <span className="material-symbols-outlined">upload_file</span>
           <span className="tab-text">Upload CSV</span>
         </button>
         <button 
           className={`dashboard-tab ${activeTab === 'sql' ? 'active' : ''}`} 
           onClick={() => switchTab('sql')}
         >
-          <span className="material-symbols-outlined">database</span>
           <span className="tab-text">SQL Database</span>
         </button>
       </div>
@@ -162,9 +160,6 @@ function Sidebar({ onFileUpload }) {
           onDrop={handleDrop}
           onClick={handleFileUploadClick}
         >
-          <div className="upload-icon-container">
-            <span className="material-symbols-outlined upload-icon">cloud_upload</span>
-          </div>
           <div className="upload-text">
             <p>Drag & drop files here or</p>
             <button className="browse-button">Browse files</button>
