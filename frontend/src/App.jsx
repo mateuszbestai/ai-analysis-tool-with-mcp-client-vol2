@@ -1,127 +1,179 @@
 import "./App.css";
-import Navbar from "./components/Navbar";
+import "./button-fix.css";
 import { useState, useRef, useEffect } from "react";
+import Navbar from "./components/Navbar";
 import Chatbox from "./components/Chatbox";
+import Sidebar from "./components/Sidebar";
+import ReportGenerator from "./components/ReportGenerator";
+import TableWithSearch from "./components/TableWithSearch";
 import DatabaseConnectionManager from "./components/DatabaseConnectionManager";
 
 function App() {
-  const [fileName, setFileName] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
 
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (["dragenter", "dragover"].includes(e.type)) {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+  // Handle message updates from Chatbox
+  const updateMessages = (newMessages) => {
+    setMessages(newMessages);
+  };
+
+  // Listen for create-report events
+  useEffect(() => {
+    const handleCreateReport = () => {
+      setReportOpen(true);
+    };
+    
+    document.addEventListener('createReport', handleCreateReport);
+    
+    return () => {
+      document.removeEventListener('createReport', handleCreateReport);
+    };
+  }, []);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    if (!darkMode) {
+      document.body.classList.add('darkmode');
+    } else {
+      document.body.classList.remove('darkmode');
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files?.[0]) {
-      uploadFile(files[0]);
-      setFileName(files[0].name);
-    }
-  };
-
-  const handleFileUploadClick = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleFileInputChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      uploadFile(file);
-      setFileName(file.name);
-    }
-  };
-
-  function uploadFile(file) {
-    const formData = new FormData();
-    if(file.size >= 1024*1024*50){
-      alert("File size too big. Max 50 MB.");
-      return;
-    }
-    formData.append("file", file);
-
-    fetch("/upload", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.message) {
-          alert(data.message);
-        } else {
-          alert(data.error);
+  // Apply preview table enhancement
+  useEffect(() => {
+    // This will enhance any tables created after this component loads
+    const enhanceExistingTables = () => {
+      // Find all tables in the chat area that don't have search functionality
+      const tables = document.querySelectorAll('.chat-area .chat-table:not(.enhanced)');
+      
+      tables.forEach(table => {
+        const headers = [];
+        const rows = [];
+        
+        // Get table headers
+        table.querySelectorAll('thead th').forEach(th => {
+          headers.push(th.textContent);
+        });
+        
+        // Get table rows
+        table.querySelectorAll('tbody tr').forEach(tr => {
+          const rowData = [];
+          tr.querySelectorAll('td').forEach(td => {
+            rowData.push(td.textContent);
+          });
+          rows.push(rowData);
+        });
+        
+        if (headers.length > 0 && rows.length > 0) {
+          // Create an enhanced table with search
+          const tableName = table.closest('.preview-container')?.querySelector('.preview-title')?.textContent || 'Data Table';
+          
+          // Create container for the enhanced table
+          const enhancedContainer = document.createElement('div');
+          enhancedContainer.className = 'enhanced-table-container';
+          
+          // Render the enhanced table
+          const tableWithSearch = document.createElement('div');
+          tableWithSearch.className = 'table-with-search';
+          enhancedContainer.appendChild(tableWithSearch);
+          
+          // Replace the original table with the enhanced container
+          const tableParent = table.parentNode;
+          tableParent.appendChild(enhancedContainer);
+          
+          // Mark table as enhanced
+          table.classList.add('enhanced');
+          table.style.display = 'none';
+          
+          // Initialize the TableWithSearch component
+          // Note: This is a simplified version since we can't directly render React components here
+          // In a real implementation, you'd use ReactDOM.render or a proper React approach
+          const searchContainer = document.createElement('div');
+          searchContainer.className = 'table-toolbar';
+          
+          const searchInput = document.createElement('input');
+          searchInput.type = 'text';
+          searchInput.className = 'search-input';
+          searchInput.placeholder = 'Search in table...';
+          
+          searchContainer.appendChild(searchInput);
+          tableWithSearch.appendChild(searchContainer);
+          
+          // Create table container
+          const tableContainer = document.createElement('div');
+          tableContainer.className = 'table-container';
+          tableWithSearch.appendChild(tableContainer);
+          
+          // Clone the original table for the enhanced version
+          const enhancedTable = table.cloneNode(true);
+          enhancedTable.classList.add('enhanced-table');
+          tableContainer.appendChild(enhancedTable);
+          
+          // Add search functionality
+          searchInput.addEventListener('input', function(e) {
+            const searchValue = e.target.value.toLowerCase();
+            
+            enhancedTable.querySelectorAll('tbody tr').forEach(row => {
+              const rowText = Array.from(row.querySelectorAll('td'))
+                .map(cell => cell.textContent.toLowerCase())
+                .join(' ');
+              
+              if (rowText.includes(searchValue)) {
+                row.style.display = '';
+              } else {
+                row.style.display = 'none';
+              }
+            });
+          });
         }
       });
-  }
+    };
+    
+    // Run on load
+    enhanceExistingTables();
+    
+    // Set up mutation observer to detect new tables
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.addedNodes.length) {
+          enhanceExistingTables();
+        }
+      });
+    });
+    
+    observer.observe(document.querySelector('.chat-area'), { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="app-container">
       {/* Navbar */}
-      <Navbar />
+      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       {/* Main Content */}
       <div className="content-container">
-        {/* File Upload Sidebar */}
-        <div className="sidebar">
-          <h2 className="sidebar-title">Upload Documents</h2>
-          <div
-            className={`upload-area ${dragActive ? "drag-active" : ""}`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={handleFileUploadClick}
-          >
-            <svg
-              className="upload-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M3 16v4a1 1 0 001 1h16a1 1 0 001-1v-4M7 10l5-5m0 0l5 5m-5-5v12"
-              />
-            </svg>
-            <div className="upload-text">
-              <p>Drag & drop files here or</p>
-              <button className="browse-button">Browse files</button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="file-input"
-              onChange={handleFileInputChange}
-              accept=".csv,.xml"
-            />
-            <p className="supported-formats">Supported formats: CSV, XML</p>
-          </div>
-          
-          {/* Database Connection Manager */}
-          <div className="db-connection-container">
-            <DatabaseConnectionManager />
-          </div>
-        </div>
+        {/* Sidebar */}
+        <Sidebar />
 
         {/* Chat Area */}
         <div className="chat-area" id="chatArea">
-          <Chatbox />
+          <Chatbox updateMessages={updateMessages} />
         </div>
       </div>
+      
+      {/* Report Generator Modal */}
+      {reportOpen && (
+        <ReportGenerator 
+          setIsOpen={setReportOpen} 
+          messages={messages} 
+        />
+      )}
     </div>
   );
 }

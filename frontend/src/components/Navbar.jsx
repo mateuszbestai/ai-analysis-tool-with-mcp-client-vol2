@@ -1,6 +1,7 @@
 import { useState } from "react";
+import './Navbar.css';
 
-function Navbar() {
+function Navbar({ darkMode, toggleDarkMode }) {
   const [lightMode, setLightMode] = useState(true);
 
   function toggleMode() {
@@ -16,9 +17,9 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-left">
-        <div className="light-dark-mode-switch" onClick={toggleMode}>
+        <div className="light-dark-mode-switch" onClick={toggleDarkMode}>
           <span className="material-symbols-outlined">
-            { lightMode ? "light_mode" : "dark_mode"}
+            { darkMode ? "dark_mode" : "light_mode"}
           </span>
         </div>
       </div>

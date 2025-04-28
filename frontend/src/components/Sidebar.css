@@ -1,0 +1,243 @@
+/* Sidebar Styles with Fixed Button Styling */
+.sidebar {
+  width: 320px;
+  border-right: 1px solid #ccc;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.sidebar-title {
+  color: #273c75;
+  font-weight: 600;
+  margin-bottom: 24px;
+  text-align: center;
+  font-size: 22px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Status indicators */
+.dashboard-status {
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(39, 60, 117, 0.08);
+  border: 1px solid rgba(39, 60, 117, 0.15);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.connected .status-indicator {
+  background-color: #4CAF50; /* Green */
+}
+
+.file-loaded .status-indicator {
+  background-color: #2196F3; /* Blue */
+}
+
+.status-text {
+  color: #333;
+  font-weight: 500;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Tab navigation - FIXED */
+.dashboard-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #273c75;
+}
+
+.dashboard-tab {
+  flex: 1;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  height: 70px;
+  /* IMPORTANT - Fix the button text styling */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.dashboard-tab .tab-text {
+  margin-top: 5px;
+  /* IMPORTANT - Ensure normal capitalization */
+  text-transform: none !important;
+  font-variant: normal !important;
+}
+
+.dashboard-tab.active {
+  background-color: #273c75;
+  color: white;
+}
+
+.dashboard-tab .material-symbols-outlined {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+/* Dashboard panels */
+.dashboard-panel {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+}
+
+.dashboard-panel.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0.7; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Upload area - FIXED */
+.upload-area {
+  flex: 1;
+  border: 2px dashed #bbb;
+  border-radius: 8px;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 220px;
+  background-color: #f8f9fa;
+}
+
+.upload-area.drag-active {
+  border-color: #273c75;
+  background-color: rgba(39, 60, 117, 0.1);
+}
+
+.upload-icon-container {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: rgba(39, 60, 117, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.upload-icon {
+  font-size: 36px !important;
+  color: #273c75;
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.upload-text p {
+  margin-bottom: 14px;
+  color: #333;
+  font-size: 15px;
+  /* IMPORTANT - Normal case */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  text-transform: none !important;
+}
+
+/* FIXED Browse button */
+.browse-button {
+  background-color: #273c75;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+  /* IMPORTANT - Fix the button text */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.browse-button:hover {
+  background-color: #192a56;
+}
+
+.file-input {
+  display: none;
+}
+
+.supported-formats {
+  font-size: 12px;
+  color: #777;
+  margin-top: 10px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Dashboard actions - FIXED SINGLE BUTTON */
+.dashboard-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+/* FIXED Generate Report button */
+.create-report-btn {
+  width: 100%;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #273c75;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  /* IMPORTANT - Fix the button text */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.create-report-btn:hover {
+  background-color: #192a56;
+}
+
+.btn-icon {
+  margin-right: 10px;
+  font-size: 20px;
+}

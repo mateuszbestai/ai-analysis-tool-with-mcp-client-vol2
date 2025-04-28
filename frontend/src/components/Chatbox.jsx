@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import ImageOverlay from "./ImageOverlay";
-import Markdown from 'react-markdown'
+import Markdown from 'react-markdown';
+import TableWithSearch from "./TableWithSearch";
+import './Chatbox.css';
 
-function Chatbox() {
+function Chatbox({ updateMessages }) {
   const [messages, setMessages] = useState([]);
   const [questionInput, setQuestionInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +18,11 @@ function Chatbox() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+    // Pass messages up to parent component for report generation
+    if (typeof updateMessages === 'function') {
+      updateMessages(messages);
+    }
+  }, [messages, updateMessages]);
 
   function handleQuestionInputChange(e) {
     setQuestionInput(e.target.value);
@@ -120,41 +126,11 @@ function Chatbox() {
     
     return (
       <div id={containerId} className="chat-table-wrapper">
-        <div className="table-controls">
-          <button 
-            id={`toggle-${tableId}`} 
-            className="table-control-btn" 
-            title="Hide table" 
-            onClick={() => toggleTableVisibility(tableId)}
-          >
-            <span className="material-symbols-outlined">visibility_off</span>
-          </button>
-          <button 
-            className="table-control-btn" 
-            title="Remove table" 
-            onClick={() => removeTable(containerId)}
-          >
-            <span className="material-symbols-outlined">delete</span>
-          </button>
-        </div>
-        <table id={tableId} className="chat-table">
-          <thead>
-            <tr>
-              {tableData.headers.map((header, index) => (
-                <th key={index}>{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tableData.rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((cell, cellIndex) => (
-                  <td key={cellIndex}>{cell !== null ? cell : ''}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TableWithSearch 
+          headers={tableData.headers}
+          rows={tableData.rows}
+          tableName={`Data Table ${index + 1}`}
+        />
       </div>
     );
   }
@@ -195,6 +171,11 @@ function Chatbox() {
   function hideImageFullScreen() {
     document.body.classList.remove("stop-scroll");
     setIsImageFullScreen(false);
+  }
+
+  function handleCreateReport() {
+    const reportEvent = new CustomEvent('createReport');
+    document.dispatchEvent(reportEvent);
   }
 
   return (
@@ -269,6 +250,7 @@ function Chatbox() {
         }}
         className="input-form"
       >
+
         <div className="input-container">
           <input
             type="text"
