@@ -1,3 +1,4 @@
+// Sidebar.jsx - Updated version
 import { useState, useRef, useEffect } from "react";
 import DatabaseConnectionManager from "./DatabaseConnectionManager";
 import "./Sidebar.css";
@@ -182,8 +183,8 @@ function Sidebar({ onFileUpload }) {
 
       {/* Create Report Button - Only show one */}
       <div className="dashboard-actions">
-        <button className="create-report-btn" onClick={handleCreateReport}>
-          <span className="material-symbols-outlined btn-icon">Generate Report</span>
+        <button className="browse-button create-report-btn" onClick={handleCreateReport}>
+          Generate Report
         </button>
       </div>
     </div>

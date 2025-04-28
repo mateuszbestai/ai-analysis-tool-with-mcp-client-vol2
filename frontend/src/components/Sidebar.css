@@ -241,3 +241,78 @@
   margin-right: 10px;
   font-size: 20px;
 }
+
+/* Add these CSS fixes to Sidebar.css */
+
+/* Fix for the Generate Report button */
+.create-report-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background-color: #273c75;
+  color: white;
+  text-transform: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  margin-top: 20px;
+  transition: all 0.2s ease;
+}
+
+.create-report-btn:hover {
+  background-color: #192a56;
+}
+
+.create-report-btn .material-symbols-outlined {
+  font-size: inherit !important;
+  text-transform: none !important;
+}
+
+/* Add these CSS fixes to Table.css */
+
+/* Ensure table cells are visible */
+.chat-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  background-color: var(--background-color);
+}
+
+.chat-table th, 
+.chat-table td {
+  border: 1px solid rgba(var(--general-color1-rgb), 0.3);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-color1);
+}
+
+/* Make sure the table container is visible */
+.table-container {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: var(--background-color);
+  border: 1px solid rgba(var(--general-color1-rgb), 0.3);
+  border-radius: 0 0 8px 8px;
+}
+
+/* Ensure the table header is visible */
+.table-header {
+  background-color: var(--general-color1);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Make empty state more visible */
+.no-results {
+  text-align: center;
+  padding: 24px;
+  font-style: italic;
+  color: var(--text-color3);
+  background-color: rgba(var(--general-color1-rgb), 0.05);
+}

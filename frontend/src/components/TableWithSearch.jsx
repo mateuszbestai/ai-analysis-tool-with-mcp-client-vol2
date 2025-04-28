@@ -1,26 +1,79 @@
+// TableWithSearch.jsx - Comprehensive fix
 import { useState, useEffect } from 'react';
 import './Table.css';
 
 const TableWithSearch = ({ headers, rows, tableName }) => {
+  // Add console logging to debug data
+  console.log('TableWithSearch received:', { 
+    tableName, 
+    headers: headers ? `${headers.length} headers` : 'no headers', 
+    rows: rows ? `${rows.length} rows` : 'no rows' 
+  });
+  console.log('First row:', rows && rows.length > 0 ? rows[0] : 'none');
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredRows, setFilteredRows] = useState(rows);
+  const [filteredRows, setFilteredRows] = useState([]);
   const [filters, setFilters] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5); // Default to 5 rows per page
   const [expandedFilters, setExpandedFilters] = useState(false);
+  const [processedHeaders, setProcessedHeaders] = useState([]);
 
-  // Initialize filters based on headers
+  // Process and normalize headers
   useEffect(() => {
+    if (!headers) {
+      // If no headers provided, but we have rows, generate numeric headers
+      if (rows && rows.length > 0 && rows[0] && Array.isArray(rows[0])) {
+        const generatedHeaders = Array.from({ length: rows[0].length }, (_, i) => `Column ${i+1}`);
+        setProcessedHeaders(generatedHeaders);
+        console.log('Generated headers:', generatedHeaders);
+      } else {
+        setProcessedHeaders([]);
+      }
+    } else {
+      setProcessedHeaders(headers);
+      console.log('Using provided headers:', headers);
+    }
+  }, [headers, rows]);
+
+  // Process and normalize rows, ensuring we always have a valid array
+  useEffect(() => {
+    if (!rows || !Array.isArray(rows)) {
+      setFilteredRows([]);
+      return;
+    }
+    
+    // Ensure all rows are arrays
+    const normalizedRows = rows.map(row => 
+      Array.isArray(row) ? row : [row]
+    );
+    
+    setFilteredRows(normalizedRows);
+    console.log('Normalized rows:', normalizedRows.length);
+  }, [rows]);
+
+  // Initialize filters based on processed headers
+  useEffect(() => {
+    if (!processedHeaders || processedHeaders.length === 0) return;
+    
     const initialFilters = {};
-    headers.forEach(header => {
+    processedHeaders.forEach(header => {
       initialFilters[header] = { active: false, value: '' };
     });
     setFilters(initialFilters);
-  }, [headers]);
+    console.log('Initialized filters for', processedHeaders.length, 'headers');
+  }, [processedHeaders]);
 
-  // Apply search and filters when they change
+  // Apply search, filters, and sorting to the normalized rows
   useEffect(() => {
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      console.log('No rows to filter');
+      return;
+    }
+    
+    console.log('Applying filters/search to', rows.length, 'rows');
+    
     let result = [...rows];
     
     // Apply search
@@ -28,87 +81,124 @@ const TableWithSearch = ({ headers, rows, tableName }) => {
       const lowercaseQuery = searchQuery.toLowerCase();
       result = result.filter(row => 
         row.some(cell => 
-          (cell !== null && cell.toString().toLowerCase().includes(lowercaseQuery))
+          cell !== null && 
+          cell !== undefined && 
+          String(cell).toLowerCase().includes(lowercaseQuery)
         )
       );
+      console.log('After search:', result.length, 'rows remain');
     }
     
     // Apply column filters
-    Object.keys(filters).forEach((columnName, columnIndex) => {
-      if (filters[columnName].active && filters[columnName].value) {
-        const filterValue = filters[columnName].value.toLowerCase();
-        result = result.filter(row => 
-          row[columnIndex] !== null && 
-          row[columnIndex].toString().toLowerCase().includes(filterValue)
-        );
-      }
-    });
+    if (processedHeaders && processedHeaders.length > 0) {
+      processedHeaders.forEach((header, columnIndex) => {
+        if (filters[header]?.active && filters[header]?.value) {
+          const filterValue = filters[header].value.toLowerCase();
+          result = result.filter(row => {
+            // Make sure the row has this column index
+            if (row.length <= columnIndex) return false;
+            
+            const cell = row[columnIndex];
+            return cell !== null && 
+                   cell !== undefined && 
+                   String(cell).toLowerCase().includes(filterValue);
+          });
+        }
+      });
+      console.log('After column filters:', result.length, 'rows remain');
+    }
     
     // Apply sorting
-    if (sortConfig.key !== null) {
-      const columnIndex = headers.indexOf(sortConfig.key);
-      result.sort((a, b) => {
-        const aValue = a[columnIndex] !== null ? a[columnIndex].toString().toLowerCase() : '';
-        const bValue = b[columnIndex] !== null ? b[columnIndex].toString().toLowerCase() : '';
-        
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
+    if (sortConfig.key !== null && processedHeaders) {
+      const columnIndex = processedHeaders.indexOf(sortConfig.key);
+      if (columnIndex !== -1) {
+        result.sort((a, b) => {
+          // Handle cases where row might not have this index
+          const aValue = a.length > columnIndex ? String(a[columnIndex] || '').toLowerCase() : '';
+          const bValue = b.length > columnIndex ? String(b[columnIndex] || '').toLowerCase() : '';
+          
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
+        console.log('Sorted by', sortConfig.key, 'in', sortConfig.direction, 'order');
+      }
     }
     
     setFilteredRows(result);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, filters, sortConfig, rows]);
+    
+    // Reset to first page when filters change
+    setCurrentPage(1);
+  }, [searchQuery, filters, sortConfig, rows, processedHeaders]);
 
-  // Handle sorting
+  // Handle sorting when a column header is clicked
   const handleSort = (columnName) => {
     let direction = 'asc';
     if (sortConfig.key === columnName && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
     setSortConfig({ key: columnName, direction });
+    console.log('Sort changed to', columnName, direction);
   };
 
   // Toggle column filter
   const toggleFilter = (columnName) => {
-    setFilters({
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       [columnName]: {
-        ...filters[columnName],
-        active: !filters[columnName].active
+        ...prev[columnName],
+        active: !prev[columnName]?.active
       }
-    });
+    }));
+    console.log('Toggled filter for', columnName);
   };
 
   // Update filter value
   const updateFilterValue = (columnName, value) => {
-    setFilters({
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       [columnName]: {
-        ...filters[columnName],
+        ...prev[columnName],
         value: value
       }
-    });
+    }));
   };
 
-  // Pagination
+  // Calculate pagination values
+  const totalRows = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+  
+  // Ensure current page is valid
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+  
+  // Calculate slice for current page
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = filteredRows.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  
+  console.log('Pagination:', { 
+    currentPage, 
+    rowsPerPage, 
+    totalRows, 
+    totalPages,
+    displayingRows: currentRows.length
+  });
 
   // Generate unique ID for the table
-  const tableId = `table-${tableName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const tableId = `table-${tableName ? tableName.replace(/[^a-zA-Z0-9]/g, '-') : 'data'}-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
     <div className="table-with-search">
       <div className="table-header">
-        <h3 className="table-title">{tableName}</h3>
+        <h3 className="table-title">{tableName || 'Data Table'}</h3>
         
         <div className="table-toolbar">
           <div className="search-container">
@@ -132,7 +222,7 @@ const TableWithSearch = ({ headers, rows, tableName }) => {
           
           <div className="table-pagination">
             <span className="pagination-info">
-              {filteredRows.length} rows (Page {currentPage} of {totalPages || 1})
+              {totalRows} rows (Page {currentPage} of {totalPages})
             </span>
             <select 
               className="rows-per-page" 
@@ -180,9 +270,9 @@ const TableWithSearch = ({ headers, rows, tableName }) => {
       </div>
       
       {/* Column filters */}
-      {expandedFilters && (
+      {expandedFilters && processedHeaders && processedHeaders.length > 0 && (
         <div className="column-filters">
-          {headers.map((header, index) => (
+          {processedHeaders.map((header, index) => (
             <div key={index} className="filter-item">
               <div className="filter-header">
                 <label className="filter-label">
@@ -212,7 +302,7 @@ const TableWithSearch = ({ headers, rows, tableName }) => {
         <table id={tableId} className="chat-table">
           <thead>
             <tr>
-              {headers.map((header, index) => (
+              {processedHeaders && processedHeaders.map((header, index) => (
                 <th 
                   key={index} 
                   onClick={() => handleSort(header)}
@@ -228,21 +318,35 @@ const TableWithSearch = ({ headers, rows, tableName }) => {
                   </div>
                 </th>
               ))}
+              {(!processedHeaders || processedHeaders.length === 0) && currentRows.length > 0 && 
+                currentRows[0].map((_, index) => (
+                  <th key={index}>Column {index + 1}</th>
+                ))
+              }
             </tr>
           </thead>
           <tbody>
-            {currentRows.length > 0 ? (
+            {currentRows && currentRows.length > 0 ? (
               currentRows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
+                <tr key={rowIndex} className="data-row">
                   {row.map((cell, cellIndex) => (
-                    <td key={cellIndex}>{cell !== null ? cell : ''}</td>
+                    <td key={cellIndex} className="data-cell">
+                      {cell !== null && cell !== undefined ? String(cell) : ''}
+                    </td>
                   ))}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={headers.length} className="no-results">
-                  No data matching your search criteria
+                <td 
+                  colSpan={
+                    processedHeaders?.length || 
+                    (currentRows[0]?.length) || 
+                    1
+                  } 
+                  className="no-results"
+                >
+                  No data available
                 </td>
               </tr>
             )}

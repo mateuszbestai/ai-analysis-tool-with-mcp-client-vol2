@@ -133,7 +133,6 @@ function DatabaseConnectionManager() {
         <div className="connection-status-info">
           <div className="connection-header">
             <span className="connection-icon">
-              <span className="material-symbols-outlined">database</span>
             </span>
             <div className="connection-details">
               <h3>Connected Database</h3>
@@ -145,14 +144,12 @@ function DatabaseConnectionManager() {
               className="connection-settings-btn" 
               onClick={openModal}
             >
-              <span className="material-symbols-outlined">settings</span>
               Database Settings
             </button>
           </div>
         </div>
       ) : (
         <button className="db-connect-button" onClick={openModal}>
-          <span className="material-symbols-outlined btn-icon">link</span>
           Connect to Database
         </button>
       )}
@@ -170,7 +167,6 @@ function DatabaseConnectionManager() {
                 <div className="connection-info">
                   <div className="connected-status">
                     <div className="status-icon">
-                      <span className="material-symbols-outlined">check_circle</span>
                     </div>
                     <div className="status-details">
                       <h3>Connected to {connectedDb}</h3>
@@ -200,7 +196,6 @@ function DatabaseConnectionManager() {
                                 closeModal();
                               }}
                             >
-                              <span className="material-symbols-outlined">visibility</span>
                               Preview
                             </button>
                           </li>
@@ -231,7 +226,6 @@ function DatabaseConnectionManager() {
                         });
                       }}
                     >
-                      <span className="material-symbols-outlined">refresh</span>
                       Refresh Tables
                     </button>
                     
@@ -253,7 +247,6 @@ function DatabaseConnectionManager() {
                         });
                       }}
                     >
-                      <span className="material-symbols-outlined">link_off</span>
                       Disconnect
                     </button>
                   </div>
@@ -483,7 +476,6 @@ function DatabaseConnectionManager() {
                 
                 {connectionSuccess && (
                   <div className="connection-success">
-                    <span className="material-symbols-outlined">check_circle</span>
                     <p>Successfully connected to {connectedDb}</p>
                   </div>
                 )}

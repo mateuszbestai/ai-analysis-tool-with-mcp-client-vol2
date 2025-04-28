@@ -121,8 +121,27 @@ function Chatbox({ updateMessages }) {
   }
 
   function renderTable(tableData, index) {
+    if (!tableData) {
+      console.error('No table data provided to renderTable function');
+      return null;
+    }
+    
+    console.log('Rendering table:', tableData);
+    
+    // Check if we have the expected structure
+    if (!tableData.headers || !tableData.rows) {
+      console.error('Invalid table data structure:', tableData);
+      return (
+        <div className="table-error">
+          Table data is missing headers or rows
+        </div>
+      );
+    }
+    
     const tableId = `table-${index}`;
     const containerId = `table-container-${index}`;
+    
+    console.log(`Table ${index} has ${tableData.headers.length} headers and ${tableData.rows.length} rows`);
     
     return (
       <div id={containerId} className="chat-table-wrapper">
@@ -134,7 +153,7 @@ function Chatbox({ updateMessages }) {
       </div>
     );
   }
-
+  
   function clickClearBtn() {
     // Get token if it exists
     const token = localStorage.getItem("mcpToken");

@@ -1,12 +1,13 @@
-/* Table with Search and Filter Styles */
-.table-with-search {
+  /* Table with Search and Filter Styles */
+  .table-with-search {
     margin-bottom: 24px;
-    border: 1px solid var(--general-color1);
+    border: 1px solid #273c75;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    background-color: var(--background-color);
+    background-color: #ffffff;
   }
+
   
   .table-header {
     background-color: var(--general-color1);
@@ -166,41 +167,57 @@
     box-shadow: 0 0 0 2px rgba(var(--general-color1-rgb), 0.1);
   }
   
-  /* Table styles */
+  /* Table container styling */
   .table-container {
     overflow-x: auto;
     max-height: 400px;
     overflow-y: auto;
+    padding: 0;
+    background-color: #ffffff;
   }
   
+  /* Enhanced table styles with explicit colors */
   .chat-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: auto;
-  }
-  
-  .chat-table th, 
-  .chat-table td {
-    border: 1px solid rgba(var(--general-color1-rgb), 0.3);
-    padding: 8px 12px;
-    text-align: left;
+    color: #333;
     font-size: 14px;
   }
-  
-  .chat-table th {
-    background-color: rgba(var(--general-color1-rgb), 0.1);
-    color: var(--text-color1);
-    font-weight: 600;
+
+  /* Table header */
+  .chat-table thead {
     position: sticky;
     top: 0;
     z-index: 10;
+    background-color: #f8f9fa;
+  }
+    
+  .chat-table th, 
+  /* Table cells with explicit styling */
+  .chat-table td {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    background-color: #ffffff;
+    color: #333;
+    text-align: left;
+  }
+  
+  .chat-table th {
+    background-color: #f0f2f5;
+    color: #333;
+    font-weight: 600;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    text-align: left;
     cursor: pointer;
-    transition: background-color 0.2s;
+    position: sticky;
+    top: 0;
   }
   
   .chat-table th:hover {
-    background-color: rgba(var(--general-color1-rgb), 0.2);
-  }
+    background-color: #e9ecef;
+  }  
   
   .th-content {
     display: flex;
@@ -225,23 +242,46 @@
   .chat-table tr:hover {
     background-color: rgba(var(--general-color1-rgb), 0.1);
   }
-  
-  .no-results {
-    text-align: center;
-    padding: 24px;
-    font-style: italic;
-    color: var(--text-color3);
+
+    /* Explicit row styling */
+  .chat-table .data-row {
+    border-bottom: 1px solid #ddd;
+  }
+
+  .chat-table .data-row:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+
+  .chat-table .data-row:hover {
+    background-color: #f1f3f5;
   }
   
-  /* Pagination footer */
+  /* Cell styling */
+  .chat-table .data-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Empty State */
+  .no-results {
+    padding: 30px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    background-color: #f8f9fa;
+  }
+    
+  /* Table Pagination Footer */
   .pagination-footer {
-    padding: 12px;
     display: flex;
     justify-content: center;
-    background-color: rgba(var(--general-color1-rgb), 0.05);
-    border-top: 1px solid rgba(var(--general-color1-rgb), 0.2);
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #ddd;
   }
-  
+    
   .page-numbers {
     display: flex;
     gap: 6px;
