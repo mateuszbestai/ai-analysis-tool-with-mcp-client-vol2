@@ -447,7 +447,7 @@ class SQLAgent:
     # Replace the get_table_preview method in sql_agent.py with this updated version
 
     def get_table_preview(self, table_name, limit=10):
-        """Get a preview of the specified table"""
+        """Get a preview of the specified table with improved error handling and data processing"""
         logging.info(f"SQLAgent.get_table_preview called for table: {table_name}")
         
         if table_name not in self.tables:
@@ -466,7 +466,7 @@ class SQLAgent:
             if preview_data is None:
                 logging.warning("No preview data returned from MCP client")
                 return None, "No data returned from server"
-                
+            
             # Verify DataFrame
             if not isinstance(preview_data, pd.DataFrame):
                 logging.error(f"Expected DataFrame but got {type(preview_data).__name__}")
@@ -487,31 +487,36 @@ class SQLAgent:
             # Handle empty DataFrames gracefully
             if preview_data.empty:
                 logging.info(f"Empty DataFrame returned for table {table_name}")
-                # Create a proper empty DataFrame with column information if available
-                if preview_data.columns is not None and len(preview_data.columns) > 0:
-                    logging.info(f"Empty DataFrame has column information: {list(preview_data.columns)}")
-                    # Return the empty DataFrame with columns
-                    return preview_data
-                else:
-                    # Try to get schema information for better column details
-                    logging.info(f"Getting schema information for empty table {table_name}")
-                    schema_df, schema_error = self.mcp_client.get_table_schema(table_name)
-                    if schema_error:
-                        logging.warning(f"Could not get schema for empty table: {schema_error}")
-                        # Return a basic empty DataFrame with a note
-                        return pd.DataFrame(), f"Table {table_name} exists but is empty"
-                    
-                    # Create empty DataFrame with column names from schema
-                    if schema_df is not None and not schema_df.empty:
-                        column_names = schema_df["COLUMN_NAME"].tolist()
-                        logging.info(f"Created empty DataFrame with columns from schema: {column_names}")
-                        return pd.DataFrame(columns=column_names)
+                return pd.DataFrame(columns=["No data available"]), None
+            
+            # Prepare row data with explicit conversion to ensure serialization works
+            rows = []
+            for _, row in preview_data.iterrows():
+                row_data = []
+                for item in row:
+                    if pd.isna(item):
+                        row_data.append(None)
+                    elif isinstance(item, (int, float, bool)):
+                        row_data.append(item)
                     else:
-                        return pd.DataFrame(), f"Table {table_name} exists but is empty"
+                        row_data.append(str(item))
+                rows.append(row_data)
             
-            logging.info(f"Successfully retrieved preview with {len(preview_data)} rows and {len(preview_data.columns)} columns")
-            return preview_data
+            # Create a structured response
+            formatted_result = {
+                "headers": preview_data.columns.tolist(),
+                "rows": rows
+            }
             
+            # Create a new DataFrame with the processed data to ensure it's serializable
+            result_df = pd.DataFrame(rows, columns=preview_data.columns.tolist())
+            
+            logging.info(f"Successfully prepared preview with {len(result_df)} rows and {len(result_df.columns)} columns")
+            
+            # We return both the DataFrame and a structured format
+            result_df.formatted_data = formatted_result
+            return result_df, None
+                
         except Exception as e:
             logging.error(f"Exception in get_table_preview: {str(e)}", exc_info=True)
             return None, f"Exception while fetching preview: {str(e)}"

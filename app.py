@@ -128,13 +128,14 @@ def connect_database():
 
 @app.route("/get_table_preview", methods=["POST"])
 def get_table_preview():
+    """Get a preview of a table with simplified processing"""
     data = request.get_json()
     table_name = data.get("table")
     
     if not table_name:
         return jsonify({"error": "Table name is required"}), 400
     
-    # Add additional logging
+    # Log request details
     logging.info(f"Received preview request for table: {table_name}")
     logging.info(f"Session mode: {session.get('mode')}")
     
@@ -177,63 +178,51 @@ def get_table_preview():
             sql_agent.mcp_client.token = token
             logging.info("Updated MCP client with token from request")
         
-        # Get table preview
-        logging.info(f"Requesting preview for table {table_name}")
-        result = sql_agent.get_table_preview(table_name)
-        
-        # Handle different return types
-        if isinstance(result, pd.DataFrame):
-            logging.info(f"Preview successful, got DataFrame with {len(result)} rows")
-            # Handle empty DataFrame
-            if result.empty:
-                return jsonify({
-                    "message": f"Preview of {table_name} (empty table)",
-                    "table": {
-                        "headers": [],
-                        "rows": []
-                    }
-                }), 200
+        # Execute a simple query to get table preview
+        try:
+            logging.info(f"Executing direct SQL query for table preview: {table_name}")
+            query = f"SELECT TOP 10 * FROM [{table_name}]"
+            result, error = sql_agent.mcp_client.execute_query(query)
+            
+            if error:
+                logging.error(f"Error executing preview query: {error}")
+                return jsonify({"error": f"Error executing preview query: {error}"}), 500
                 
-            # Prepare table data for non-empty DataFrame
-            table_data = {
-                "headers": result.columns.tolist(),
-                "rows": result.values.tolist(),
-            }
+            if not isinstance(result, pd.DataFrame):
+                logging.error(f"Query result is not a DataFrame: {type(result)}")
+                return jsonify({"error": "Query result is not in expected format"}), 500
+                
+            # Convert DataFrame to list format for response
+            headers = result.columns.tolist()
+            
+            # Handle each row and convert values to JSON-serializable format
+            rows = []
+            for _, row in result.iterrows():
+                row_data = []
+                for item in row:
+                    if pd.isna(item):
+                        row_data.append(None)
+                    elif isinstance(item, (int, float, bool)):
+                        row_data.append(item)
+                    else:
+                        row_data.append(str(item))
+                rows.append(row_data)
+            
+            logging.info(f"Preview successful: {len(rows)} rows, {len(headers)} columns")
+            
+            # Return in the expected format
             return jsonify({
                 "message": f"Preview of {table_name}",
-                "table": table_data
-            }), 200
-        elif isinstance(result, tuple) and len(result) == 2:
-            # Handle the case where get_table_preview returns (df, error)
-            df, error = result
-            if df is not None and isinstance(df, pd.DataFrame):
-                logging.info(f"Preview successful, got DataFrame with {len(df)} rows")
-                
-                # Handle empty DataFrame
-                if df.empty:
-                    return jsonify({
-                        "message": f"Preview of {table_name} (empty table)",
-                        "table": {
-                            "headers": [],
-                            "rows": []
-                        }
-                    }), 200
-                
-                # Prepare table data for non-empty DataFrame
-                table_data = {
-                    "headers": df.columns.tolist(),
-                    "rows": df.values.tolist(),
+                "table": {
+                    "headers": headers,
+                    "rows": rows
                 }
-                return jsonify({
-                    "message": f"Preview of {table_name}",
-                    "table": table_data
-                }), 200
-            else:
-                logging.error(f"Preview error: {error}")
-                return jsonify({"error": f"Error retrieving table: {error}"}), 500
-        else:
-            logging.error(f"Invalid result type: {type(result).__name__}")
-            return jsonify({"error": f"Error retrieving table: Unexpected response format"}), 500
+            }), 200
+            
+        except Exception as query_error:
+            logging.error(f"Error executing preview query: {str(query_error)}")
+            return jsonify({"error": f"Error executing preview query: {str(query_error)}"}), 500
+            
     except Exception as e:
         logging.error("Error getting table preview: %s", str(e), exc_info=True)
         return jsonify({"error": f"Failed to get table preview: {str(e)}"}), 500
@@ -431,7 +420,7 @@ def ask_question():
         return jsonify({"error": "Invalid mode. Please upload a file or connect to a database."}), 400
 
 def handle_csv_question(question):
-    """Handle questions in CSV mode"""
+    """Handle questions in CSV mode with support for last/bottom rows"""
     # Retrieve DataFrame from the session
     csv_filepath = session.get("csv_filepath")
     if not csv_filepath:
@@ -439,33 +428,61 @@ def handle_csv_question(question):
 
     try:
         df = pd.read_csv(csv_filepath)
+        logging.info(f"Successfully read CSV with {len(df)} rows and {len(df.columns)} columns")
     except Exception as e:
         logging.error("Error reading CSV file: %s", str(e))
         return jsonify({"error": "Failed to process the uploaded file"}), 500
 
     # Handle table-related questions
-    if "table" in question.lower() or "rows" in question.lower():
+    if any(term in question.lower() for term in ["table", "rows", "data", "show", "display"]):
+        # Check if the user wants the last rows instead of the first rows
+        want_last_rows = any(term in question.lower() for term in ["last", "bottom", "tail", "end"])
+        
         # Extract the number of rows requested
         import re
         match = re.search(r"(\d+)\s*rows", question.lower())
-        num_rows = (
-            int(match.group(1)) if match else 10
-        )  # Default to 10 rows if no number is specified
-
+        num_rows = int(match.group(1)) if match else 10  # Default to 10 rows
+        
         # Limit rows to the maximum available rows in the DataFrame
         num_rows = min(num_rows, len(df))
-
+        
+        # Get either head or tail based on what was requested
+        if want_last_rows:
+            df_subset = df.tail(num_rows)
+            description = f"last {num_rows}"
+        else:
+            df_subset = df.head(num_rows)
+            description = f"first {num_rows}"
+        
+        # Convert DataFrame to lists for JSON serialization
+        data_rows = []
+        for _, row in df_subset.iterrows():
+            row_data = []
+            for item in row:
+                if pd.isna(item):
+                    row_data.append(None)
+                elif isinstance(item, (int, float, bool)):
+                    row_data.append(item)
+                else:
+                    row_data.append(str(item))
+            data_rows.append(row_data)
+        
+        # Ensure column names are strings
+        headers = [str(col) for col in df.columns.tolist()]
+        
+        # Log what we're sending
+        logging.info(f"Sending {description} rows as table with {len(headers)} columns and {len(data_rows)} rows")
+        
         # Prepare table data
         table_data = {
-            "headers": df.columns.tolist(),
-            "rows": df.head(num_rows).values.tolist(),
+            "headers": headers,
+            "rows": data_rows
         }
-        return jsonify(
-            {
-                "answer": f"Here are the first {num_rows} rows of the data:",
-                "table": table_data,
-            }
-        )
+        
+        return jsonify({
+            "answer": f"Here are the {description} rows of the data:",
+            "table": table_data
+        })
 
     # General question handling (fallback to agent)
     try:
@@ -483,7 +500,7 @@ def handle_csv_question(question):
         return jsonify({"error": "Failed to process the question."}), 500
 
 def handle_sql_question(question):
-    """Handle questions in SQL mode"""
+    """Handle questions in SQL mode with improved table data handling"""
     # Check if we have database connection info
     if not all([
         session.get("sql_server"),
@@ -492,6 +509,9 @@ def handle_sql_question(question):
         session.get("sql_password")
     ]):
         return jsonify({"error": "Database connection information is missing"}), 400
+    
+    # Check for data/table related questions
+    is_data_request = any(term in question.lower() for term in ["show", "display", "table", "rows", "data"])
     
     try:
         agent_context = session.get("agent_context")
@@ -520,6 +540,36 @@ def handle_sql_question(question):
                 "table": None
             })
         
+        # Direct handling for table/data requests
+        if is_data_request and hasattr(sql_agent, 'last_query_result') and sql_agent.last_query_result is not None:
+            df = sql_agent.last_query_result
+            
+            # Convert DataFrame to table format
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                rows = []
+                for _, row in df.iterrows():
+                    row_data = []
+                    for item in row:
+                        if pd.isna(item):
+                            row_data.append(None)
+                        elif isinstance(item, (int, float, bool)):
+                            row_data.append(item)
+                        else:
+                            row_data.append(str(item))
+                    rows.append(row_data)
+                
+                table_data = {
+                    "headers": df.columns.tolist(),
+                    "rows": rows
+                }
+                
+                logging.info(f"Returning table data with {len(rows)} rows and {len(df.columns)} columns")
+                
+                return jsonify({
+                    "answer": "Here are the results:",
+                    "table": table_data
+                })
+        
         # Check if the answer contains a table-like structure
         if isinstance(answer, str) and answer.count("\n") > 2 and "|" in answer:
             # Potential table output, try to parse it
@@ -536,6 +586,7 @@ def handle_sql_question(question):
                                 rows.append(row)
                     
                     if headers and rows:
+                        logging.info(f"Extracted table data with {len(rows)} rows and {len(headers)} columns")
                         return jsonify({
                             "answer": "Here are the results:",
                             "table": {

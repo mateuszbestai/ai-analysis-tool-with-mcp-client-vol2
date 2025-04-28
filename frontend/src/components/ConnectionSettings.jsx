@@ -64,6 +64,8 @@ function ConnectionSettings() {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
+    console.log(`Requesting preview for table: ${table}`);
+    
     fetch('/get_table_preview', {
       method: 'POST',
       headers,
@@ -71,110 +73,150 @@ function ConnectionSettings() {
     })
     .then(response => response.json())
     .then(previewData => {
+      console.log('Preview data received:', previewData);
+      
       if (previewData.error) {
+        console.error('Preview error:', previewData.error);
         alert('Preview error: ' + previewData.error);
-      } else if (previewData.table) {
-        // Display table in the chat area
-        const chatArea = document.getElementById('chatArea');
-        if (chatArea) {
-          // Create a container div for the preview with controls
-          const previewContainer = document.createElement('div');
-          previewContainer.className = 'preview-container';
-          previewContainer.id = `preview-${Date.now()}`;
-          
-          // Add header with controls
-          const previewHeader = document.createElement('div');
-          previewHeader.className = 'preview-header';
-          
-          // Title
-          const titleSpan = document.createElement('span');
-          titleSpan.className = 'preview-title';
-          titleSpan.textContent = `Preview of table: ${table}`;
-          previewHeader.appendChild(titleSpan);
-          
-          // Controls
-          const controlsDiv = document.createElement('div');
-          controlsDiv.className = 'preview-controls';
-          
-          // Hide button
-          const hideBtn = document.createElement('button');
-          hideBtn.className = 'preview-btn preview-hide-btn';
-          hideBtn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
-          hideBtn.title = 'Hide table';
-          hideBtn.onclick = function() {
-            const tableDiv = this.closest('.preview-container').querySelector('.table-container');
-            if (tableDiv.style.display === 'none') {
-              tableDiv.style.display = 'block';
-              this.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
-              this.title = 'Hide table';
-            } else {
-              tableDiv.style.display = 'none';
-              this.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
-              this.title = 'Show table';
-            }
-          };
-          
-          // Delete button
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'preview-btn preview-delete-btn';
-          deleteBtn.innerHTML = '<span class="material-symbols-outlined">delete</span>';
-          deleteBtn.title = 'Delete preview';
-          deleteBtn.onclick = function() {
-            this.closest('.preview-container').remove();
-          };
-          
-          controlsDiv.appendChild(hideBtn);
-          controlsDiv.appendChild(deleteBtn);
-          previewHeader.appendChild(controlsDiv);
-          
-          previewContainer.appendChild(previewHeader);
-          
-          // Create table container
-          const tableDiv = document.createElement('div');
-          tableDiv.className = 'table-container';
-          
-          // Create table
-          const tableEl = document.createElement('table');
-          tableEl.className = 'chat-table';
-          
-          // Create header
-          const thead = document.createElement('thead');
-          const headerRow = document.createElement('tr');
-          previewData.table.headers.forEach(header => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            headerRow.appendChild(th);
-          });
-          thead.appendChild(headerRow);
-          tableEl.appendChild(thead);
-          
-          // Create body
-          const tbody = document.createElement('tbody');
-          previewData.table.rows.forEach(row => {
-            const tr = document.createElement('tr');
-            row.forEach(cell => {
-              const td = document.createElement('td');
-              td.textContent = cell !== null ? cell : '';
-              tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-          });
-          tableEl.appendChild(tbody);
-          
-          tableDiv.appendChild(tableEl);
-          previewContainer.appendChild(tableDiv);
-          
-          // Add the preview container to the chat area
-          chatArea.appendChild(previewContainer);
-          
-          // Close the modal
-          closeModal();
-        }
+        return;
       }
+      
+      // Extract table data
+      let headers = [];
+      let rows = [];
+      
+      if (previewData.table && previewData.table.headers) {
+        headers = previewData.table.headers;
+        rows = previewData.table.rows || [];
+      } else if (previewData.headers) {
+        headers = previewData.headers;
+        rows = previewData.rows || [];
+      } else {
+        console.error('Could not find table data in the response');
+        alert('Received response but could not find table data');
+        return;
+      }
+      
+      console.log('Extracted table data:', { headers, rows });
+      
+      // Get chat area element
+      const chatArea = document.querySelector('.chat-area');
+      if (!chatArea) {
+        console.error('Chat area not found');
+        alert('Could not find chat area to display table');
+        return;
+      }
+      
+      // Create a container for the table
+      const tableContainer = document.createElement('div');
+      tableContainer.style.margin = '15px 0';
+      tableContainer.style.border = '1px solid #273c75';
+      tableContainer.style.borderRadius = '8px';
+      tableContainer.style.overflow = 'hidden';
+      
+      // Create header
+      const headerDiv = document.createElement('div');
+      headerDiv.style.backgroundColor = '#273c75';
+      headerDiv.style.color = 'white';
+      headerDiv.style.padding = '10px 15px';
+      headerDiv.style.fontWeight = 'bold';
+      headerDiv.style.display = 'flex';
+      headerDiv.style.justifyContent = 'space-between';
+      headerDiv.textContent = `Preview of table: ${table}`;
+      
+      // Create controls
+      const controlsDiv = document.createElement('div');
+      
+      // Delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '✖';
+      deleteBtn.style.background = 'none';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.color = 'white';
+      deleteBtn.style.fontSize = '16px';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.title = 'Remove preview';
+      deleteBtn.onclick = function() {
+        tableContainer.remove();
+      };
+      
+      controlsDiv.appendChild(deleteBtn);
+      headerDiv.appendChild(controlsDiv);
+      tableContainer.appendChild(headerDiv);
+      
+      // Create table wrapper
+      const tableWrapper = document.createElement('div');
+      tableWrapper.style.overflowX = 'auto';
+      tableWrapper.style.maxHeight = '400px';
+      tableWrapper.style.overflowY = 'auto';
+      
+      // Create table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.backgroundColor = 'white';
+      
+      // Create thead
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        th.style.padding = '10px 15px';
+        th.style.backgroundColor = '#f0f2f5';
+        th.style.border = '1px solid #ddd';
+        th.style.position = 'sticky';
+        th.style.top = '0';
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+      
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // Create tbody
+      const tbody = document.createElement('tbody');
+      
+      if (rows.length > 0) {
+        rows.forEach((row, rowIndex) => {
+          const tr = document.createElement('tr');
+          
+          row.forEach(cell => {
+            const td = document.createElement('td');
+            td.style.padding = '8px 15px';
+            td.style.border = '1px solid #ddd';
+            td.style.backgroundColor = rowIndex % 2 === 0 ? 'white' : '#f8f9fa';
+            td.textContent = cell !== null && cell !== undefined ? String(cell) : '';
+            tr.appendChild(td);
+          });
+          
+          tbody.appendChild(tr);
+        });
+      } else {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = headers.length;
+        td.style.textAlign = 'center';
+        td.style.padding = '20px';
+        td.style.color = '#666';
+        td.textContent = 'No data available';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+      
+      table.appendChild(tbody);
+      tableWrapper.appendChild(table);
+      tableContainer.appendChild(tableWrapper);
+      
+      // Add to chat area
+      chatArea.appendChild(tableContainer);
+      
+      // Close the modal
+      closeModal();
     })
     .catch(error => {
       console.error('Error fetching table preview:', error);
-      alert('Error fetching table preview');
+      alert('Error fetching table preview: ' + error.message);
     });
   };
 

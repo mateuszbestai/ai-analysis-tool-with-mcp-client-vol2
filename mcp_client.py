@@ -245,7 +245,7 @@ class MCPClient:
     # Enhanced token handling and reconnection functions for mcp_client.py
 
     def get_table_preview(self, table_name, limit=10):
-        """Get a preview of the specified table with token verification"""
+        """Get a preview of the specified table with enhanced debugging and error handling"""
         # First verify token is valid
         token_valid, message = self.verify_token()
         if not token_valid:
@@ -277,8 +277,9 @@ class MCPClient:
                 params={"limit": limit}
             )
             
-            # Log the response status
+            # Log the response status and content preview
             logger.info(f"Preview response status: {response.status_code}")
+            logger.info(f"Response content sample: {response.text[:200]}...")
             
             # Handle authentication errors with reconnection attempt
             if response.status_code == 401 or response.status_code == 403:
@@ -316,20 +317,67 @@ class MCPClient:
                 logger.error(f"Error fetching preview: {error_msg}")
                 return None, error_msg
             
-            # Process response (rest of the method remains unchanged)
+            # Process response
             try:
                 data = response.json()
                 
                 # Log the response structure
                 logger.info(f"Preview response structure: {list(data.keys())}")
                 
-                # Use the new extraction method 
-                df = self.extract_dataframe(data)
+                # Extract DataFrame from the response data
+                df = None
+                
+                # Case 1: Direct format with rows and headers at top level
+                if "rows" in data and "headers" in data:
+                    rows = data["rows"]
+                    headers = data["headers"]
+                    
+                    if isinstance(rows, list) and isinstance(headers, list):
+                        logger.info(f"Creating DataFrame from direct rows ({len(rows)} rows) and headers ({len(headers)} columns)")
+                        df = pd.DataFrame(rows, columns=headers)
+                
+                # Case 2: Nested format with table containing rows and headers
+                elif "table" in data and isinstance(data["table"], dict):
+                    table_data = data["table"]
+                    if "rows" in table_data and "headers" in table_data:
+                        rows = table_data["rows"]
+                        headers = table_data["headers"]
+                        
+                        if isinstance(rows, list) and isinstance(headers, list):
+                            logger.info(f"Creating DataFrame from nested table data ({len(rows)} rows)")
+                            df = pd.DataFrame(rows, columns=headers)
+                
+                # Case 3: Response contains recordset with objects
+                elif "recordset" in data and isinstance(data["recordset"], list) and len(data["recordset"]) > 0:
+                    logger.info(f"Creating DataFrame from recordset ({len(data['recordset'])} rows)")
+                    df = pd.DataFrame(data["recordset"])
                 
                 if df is not None:
-                    # Successfully created DataFrame
+                    # Add the original data structure to the DataFrame as an attribute
+                    # This helps downstream functions that need the original format
+                    df.raw_data = data
+                    
+                    # Create a formatted structure that's consistent
+                    formatted_data = {
+                        "headers": df.columns.tolist(),
+                        "rows": df.values.tolist()
+                    }
+                    
+                    # Store the formatted data on the DataFrame
+                    df.formatted_data = formatted_data
+                    
                     logger.info(f"Successfully created DataFrame with shape {df.shape}")
                     return df, None
+                
+                # Fallback: try to create a DataFrame from the entire response
+                logger.warning("Could not extract DataFrame with standard methods, attempting direct conversion")
+                try:
+                    df = pd.DataFrame(data)
+                    df.raw_data = data
+                    logger.info(f"Created DataFrame directly from response: {df.shape}")
+                    return df, None
+                except Exception as direct_error:
+                    logger.error(f"Direct conversion failed: {str(direct_error)}")
                 
                 # If we couldn't extract a DataFrame, provide detailed error
                 error_msg = "Could not convert response to DataFrame"
@@ -343,7 +391,9 @@ class MCPClient:
                             sample = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
                             logger.error(f"Sample of '{key}': {sample}")
                 
-                return None, "No data returned in expected format"
+                # Return the original data anyway as a last resort
+                logger.info("Returning original data as a last resort")
+                return data, None
                 
             except Exception as parse_error:
                 logger.error(f"Error parsing response: {str(parse_error)}")

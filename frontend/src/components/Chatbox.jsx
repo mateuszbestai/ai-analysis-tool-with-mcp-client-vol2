@@ -3,6 +3,7 @@ import ImageOverlay from "./ImageOverlay";
 import Markdown from 'react-markdown';
 import TableWithSearch from "./TableWithSearch";
 import './Chatbox.css';
+import SimpleTable from './SimpleTable';
 
 function Chatbox({ updateMessages }) {
   const [messages, setMessages] = useState([]);
@@ -126,13 +127,13 @@ function Chatbox({ updateMessages }) {
       return null;
     }
     
-    console.log('Rendering table:', tableData);
+    console.log('Rendering table data:', tableData);
     
     // Check if we have the expected structure
     if (!tableData.headers || !tableData.rows) {
       console.error('Invalid table data structure:', tableData);
       return (
-        <div className="table-error">
+        <div className="table-error" style={{color: 'red', padding: '10px', margin: '10px 0'}}>
           Table data is missing headers or rows
         </div>
       );
@@ -143,13 +144,80 @@ function Chatbox({ updateMessages }) {
     
     console.log(`Table ${index} has ${tableData.headers.length} headers and ${tableData.rows.length} rows`);
     
+    // Direct inline table rendering with minimal complexity
     return (
-      <div id={containerId} className="chat-table-wrapper">
-        <TableWithSearch 
-          headers={tableData.headers}
-          rows={tableData.rows}
-          tableName={`Data Table ${index + 1}`}
-        />
+      <div id={containerId} className="chat-table-wrapper" style={{ margin: '15px 0' }}>
+        <div style={{ 
+          backgroundColor: '#273c75', 
+          color: 'white', 
+          padding: '10px 15px',
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          fontWeight: 'bold'
+        }}>
+          {`Data Table ${index + 1}`}
+        </div>
+        
+        <div style={{ 
+          overflowX: 'auto', 
+          border: '1px solid #ccc',
+          borderBottomLeftRadius: '8px',
+          borderBottomRightRadius: '8px',
+          maxHeight: '400px',
+          overflowY: 'auto'
+        }}>
+          <table id={tableId} style={{ 
+            width: '100%', 
+            borderCollapse: 'collapse',
+            backgroundColor: 'white'
+          }}>
+            <thead>
+              <tr>
+                {tableData.headers.map((header, i) => (
+                  <th key={i} style={{ 
+                    padding: '10px 15px', 
+                    backgroundColor: '#f0f2f5',
+                    border: '1px solid #ddd',
+                    position: 'sticky',
+                    top: 0
+                  }}>
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.rows.length > 0 ? (
+                tableData.rows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((cell, cellIndex) => (
+                      <td key={cellIndex} style={{ 
+                        padding: '8px 15px',
+                        border: '1px solid #ddd',
+                        backgroundColor: rowIndex % 2 === 0 ? 'white' : '#f8f9fa'
+                      }}>
+                        {cell !== null && cell !== undefined ? String(cell) : ''}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td 
+                    colSpan={tableData.headers.length} 
+                    style={{ 
+                      textAlign: 'center', 
+                      padding: '20px',
+                      color: '#666'
+                    }}
+                  >
+                    No data available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }
