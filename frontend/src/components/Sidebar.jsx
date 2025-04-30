@@ -1,7 +1,9 @@
 // Sidebar.jsx - Updated version
 import { useState, useRef, useEffect } from "react";
 import DatabaseConnectionManager from "./DatabaseConnectionManager";
+import DirectTablePreview from "./DirectTablePreview";
 import "./Sidebar.css";
+import "./TablePreview.css";
 
 function Sidebar({ onFileUpload }) {
   const [fileName, setFileName] = useState("");
@@ -10,13 +12,28 @@ function Sidebar({ onFileUpload }) {
   const [activeTab, setActiveTab] = useState("csv"); // "csv" or "sql"
   const [isDbConnected, setIsDbConnected] = useState(false);
   const [connectedDb, setConnectedDb] = useState("");
+  const [previewTable, setPreviewTable] = useState(null);
 
   // Check connection status on component mount
   useEffect(() => {
-    checkConnectionStatus();
+    checkConnection();
+    
+    // Listen for table preview requests
+    const handleTablePreview = (event) => {
+      if (event.detail && event.detail.table) {
+        setPreviewTable(event.detail.table);
+      }
+    };
+    
+    // Create a custom event for table preview
+    document.addEventListener('showTablePreview', handleTablePreview);
+    
+    return () => {
+      document.removeEventListener('showTablePreview', handleTablePreview);
+    };
   }, []);
   
-  const checkConnectionStatus = async () => {
+  const checkConnection = async () => {
     try {
       const token = localStorage.getItem("mcpToken");
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -112,6 +129,10 @@ function Sidebar({ onFileUpload }) {
     const reportEvent = new CustomEvent('createReport');
     document.dispatchEvent(reportEvent);
   };
+  
+  const closeTablePreview = () => {
+    setPreviewTable(null);
+  };
 
   return (
     <div className="sidebar">
@@ -178,7 +199,7 @@ function Sidebar({ onFileUpload }) {
 
       {/* SQL Connection Panel */}
       <div className={`dashboard-panel ${activeTab === 'sql' ? 'active' : ''}`}>
-        <DatabaseConnectionManager />
+        <DatabaseConnectionManager onTablePreview={(table) => setPreviewTable(table)} />
       </div>
 
       {/* Create Report Button - Only show one */}
@@ -187,6 +208,16 @@ function Sidebar({ onFileUpload }) {
           Generate Report
         </button>
       </div>
+      
+      {/* Table Preview - Integrated with the sidebar */}
+      {previewTable && (
+        <div className="sidebar-preview-container">
+          <DirectTablePreview 
+            table={previewTable}
+            onClose={closeTablePreview}
+          />
+        </div>
+      )}
     </div>
   );
 }

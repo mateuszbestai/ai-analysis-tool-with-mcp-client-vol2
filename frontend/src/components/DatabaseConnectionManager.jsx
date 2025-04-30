@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import './DatabaseConnection.css';
 
-function DatabaseConnectionManager() {
+function DatabaseConnectionManager({ onTablePreview }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
@@ -127,6 +127,24 @@ function DatabaseConnectionManager() {
     }
   };
 
+  // Handle table preview request
+  const handleTablePreview = (table) => {
+    console.log(`Requesting preview for table: ${table}`);
+    
+    // Trigger table preview through props (parent will handle this)
+    if (onTablePreview) {
+      onTablePreview(table);
+      closeModal();
+    } else {
+      // Alternatively, dispatch a global event
+      const previewEvent = new CustomEvent('showTablePreview', { 
+        detail: { table } 
+      });
+      document.dispatchEvent(previewEvent);
+      closeModal();
+    }
+  };
+
   return (
     <div className="db-connection-container">
       {isConnected ? (
@@ -183,18 +201,7 @@ function DatabaseConnectionManager() {
                             <span className="table-name">{table}</span>
                             <button 
                               className="preview-table-btn"
-                              onClick={() => {
-                                // Trigger table preview and close modal
-                                fetch('/get_table_preview', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem("mcpToken")}`
-                                  },
-                                  body: JSON.stringify({ table })
-                                });
-                                closeModal();
-                              }}
+                              onClick={() => handleTablePreview(table)}
                             >
                               Preview
                             </button>
@@ -300,7 +307,7 @@ function DatabaseConnectionManager() {
                               localStorage.setItem("dbConnections", JSON.stringify(newConnections));
                             }}
                           >
-                            <span className="material-symbols-outlined">delete</span>
+                            delete
                           </button>
                         </li>
                       ))}
@@ -458,7 +465,6 @@ function DatabaseConnectionManager() {
                         </>
                       ) : (
                         <>
-                          <span className="material-symbols-outlined">link</span>
                           Connect
                         </>
                       )}
@@ -476,6 +482,7 @@ function DatabaseConnectionManager() {
                 
                 {connectionSuccess && (
                   <div className="connection-success">
+                    <span className="material-symbols-outlined">check_circle</span>
                     <p>Successfully connected to {connectedDb}</p>
                   </div>
                 )}
